@@ -32,12 +32,14 @@ set -a
 source .env
 set +a
 
+# NOTE: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY are intentionally NOT
+# required. On EC2 we attach an IAM Instance Profile and the SDK falls
+# through to the default credential chain (IMDS). Leave both empty in
+# .env for production; set them only for local dev outside AWS.
 REQUIRED_VARS=(
     "DB_USER"
     "DB_PASSWORD"
     "DB_NAME"
-    "AWS_ACCESS_KEY_ID"
-    "AWS_SECRET_ACCESS_KEY"
     "AWS_REGION"
     "COGNITO_USER_POOL_ID"
     "COGNITO_CLIENT_ID"
