@@ -3,12 +3,15 @@
 # ==========================================
 # XMeta Partner API — Update / Redeploy
 # ==========================================
-# Pulls the latest commit from origin/main, rebuilds the backend image,
-# and recreates ONLY the backend container — postgres + nginx keep their
-# data and TLS state.
+# Pulls the latest commit from origin/main and recreates only what changed:
+#  - Backend always rebuilds + restarts (most common code path).
+#  - Nginx restarts ONLY if the new commit touched nginx/* (so its TLS
+#    state and rate-limit counters stay intact otherwise).
 #
-# Run this whenever you want to deploy new code without touching the DB.
-# For first-time bring-up use ./setup.sh instead.
+# Postgres is not part of this stack — partner-api shares xmeta-admin's
+# database. See README + docker-compose.yml.
+#
+# For first-time bring-up use ./setup.sh.
 
 set -e
 
@@ -38,6 +41,10 @@ git fetch origin main --quiet
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/main)
 
+# Track whether nginx config moved between LOCAL and REMOTE so we know
+# whether to restart nginx after the pull.
+NGINX_CHANGED=false
+
 if [ "$LOCAL" = "$REMOTE" ]; then
     echo "✅ Already up to date with origin/main."
     read -p "🔁 Rebuild + recreate backend anyway? [y/N] " -n 1 -r
@@ -47,6 +54,9 @@ if [ "$LOCAL" = "$REMOTE" ]; then
         exit 0
     fi
 else
+    if git diff --name-only "$LOCAL" "$REMOTE" | grep -q '^nginx/'; then
+        NGINX_CHANGED=true
+    fi
     git pull --ff-only origin main
     NEW_COMMIT=$(git rev-parse --short HEAD)
     echo "✨ Updated to: $NEW_COMMIT ($(git log -1 --pretty=%s))"
@@ -54,12 +64,18 @@ else
     git log --oneline "$CURRENT_COMMIT..$NEW_COMMIT" | head -20
 fi
 
-# Rebuild + recreate ONLY the backend.
+# Rebuild + recreate the backend.
 echo "🔨 Rebuilding backend image..."
 $COMPOSE build --pull backend
 
 echo "♻️  Recreating backend container..."
-$COMPOSE up -d --no-deps --force-recreate backend
+$COMPOSE up -d --force-recreate backend
+
+# If the pull touched nginx/, restart it so the new config / certs land.
+if [ "$NGINX_CHANGED" = "true" ]; then
+    echo "🌐 nginx/* changed — restarting nginx so the new config takes effect..."
+    $COMPOSE restart nginx
+fi
 
 # Brief grace period for the new container to bind ports.
 echo "⏳ Waiting 5s for backend to come up..."
@@ -78,4 +94,5 @@ echo ""
 echo "💡 If something looks wrong:"
 echo "   $COMPOSE logs -f backend       # follow live"
 echo "   $COMPOSE restart backend       # quick restart"
+echo "   $COMPOSE restart nginx         # reload nginx config"
 echo "   git log -5 --oneline           # check what got deployed"
