@@ -1,31 +1,13 @@
-# Docker Compose for Partner API + Database + Nginx
+# Docker Compose for Partner API + Nginx
+#
+# Postgres is INTENTIONALLY not part of this stack — partner-api shares
+# the same database as xmeta-admin-api (managed by that service). Set
+# DB_HOST in .env to the admin server's postgres (private VPC IP for
+# intra-VPC, public IP if the two boxes are not in the same VPC).
+#
 # Frontend (xmeta-partner-web) is deployed separately on Vercel.
 
 services:
-  # ==========================================
-  # PostgreSQL Database
-  # ==========================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: xmeta_partner_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-      TZ: Asia/Ulaanbaatar
-    ports:
-      - "5433:5432"
-    volumes:
-      - partner_pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - partner_network
-
   # ==========================================
   # Go Backend API
   # ==========================================
@@ -42,9 +24,9 @@ services:
       # App
       APP_PORT: 8080
       GIN_MODE: release
-      # Database
-      DB_HOST: postgres
-      DB_PORT: 5432
+      # Database — points at the shared admin postgres via DB_HOST in .env
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
@@ -52,8 +34,11 @@ services:
       DB_AUTO_MIGRATE: ${DB_AUTO_MIGRATE:-false}
       DB_RUN_MIGRATIONS: ${DB_RUN_MIGRATIONS:-false}
       # AWS Cognito (admin pool — used by /admin/partner/* endpoints)
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      # AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY are intentionally left
+      # empty: on EC2 we attach an IAM Instance Profile and the SDK falls
+      # through to the default credential chain (IMDS).
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_REGION: ${AWS_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
@@ -64,9 +49,6 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       # CORS — partner-portal + admin-portal origins
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - partner_network
 
@@ -88,10 +70,6 @@ services:
       - backend
     networks:
       - partner_network
-
-volumes:
-  partner_pg_data:
-    driver: local
 
 networks:
   partner_network:
