@@ -1,0 +1,12 @@
+.env
+.env.local
+main
+*.exe
+*.test
+*.out
+vendor/
+tmp/
+.idea/
+.vscode/
+*.swp
+*.swo

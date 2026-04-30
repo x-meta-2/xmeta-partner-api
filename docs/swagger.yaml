@@ -1,0 +1,2709 @@
+basePath: /api/v1
+definitions:
+  database.ApplicationStatus:
+    enum:
+    - pending
+    - approved
+    - rejected
+    type: string
+    x-enum-varnames:
+    - ApplicationStatusPending
+    - ApplicationStatusApproved
+    - ApplicationStatusRejected
+  database.Partner:
+    properties:
+      companyName:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      metaData:
+        additionalProperties: true
+        type: object
+      parent:
+        $ref: '#/definitions/database.Partner'
+      parentId:
+        type: string
+      referralCode:
+        type: string
+      socialMedia:
+        additionalProperties: true
+        description: |-
+          SocialMedia mirrors PartnerApplication.SocialMedia at approve time.
+          Application stays as the review snapshot; this column is the
+          partner's *current* profile (Settings edits land here).
+
+          `serializer:json` round-trips `map[string]interface{}` through
+          encoding/json so the column can stay TEXT — works with both lib/pq
+          and pgx. Partial `Updates(map)` bypass the serializer, so the
+          service marshals the value to a JSON string before assigning.
+        type: object
+      status:
+        $ref: '#/definitions/database.PartnerStatus'
+      tier:
+        $ref: '#/definitions/database.PartnerTier'
+      tierId:
+        type: string
+      totalEarnings:
+        type: number
+      totalReferrals:
+        type: integer
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/database.User'
+      userId:
+        type: string
+      website:
+        type: string
+    type: object
+  database.PartnerApplication:
+    properties:
+      audienceSize:
+        type: string
+      companyName:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      promotionPlan:
+        type: string
+      rejectionReason:
+        type: string
+      reviewedAt:
+        type: string
+      reviewedBy:
+        type: string
+      socialMedia:
+        additionalProperties: true
+        type: object
+      status:
+        $ref: '#/definitions/database.ApplicationStatus'
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/database.User'
+      userId:
+        type: string
+      website:
+        type: string
+    type: object
+  database.PartnerStatus:
+    enum:
+    - pending
+    - active
+    - suspended
+    type: string
+    x-enum-varnames:
+    - PartnerStatusPending
+    - PartnerStatusActive
+    - PartnerStatusSuspended
+  database.PartnerTier:
+    properties:
+      color:
+        type: string
+      commissionRate:
+        type: number
+      createdAt:
+        type: string
+      id:
+        type: string
+      isDefault:
+        type: boolean
+      level:
+        type: integer
+      maxVolume:
+        type: number
+      minActiveClients:
+        type: integer
+      minVolume:
+        type: number
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.Payout:
+    properties:
+      amount:
+        type: number
+      approvedBy:
+        type: string
+      commissionCount:
+        type: integer
+      createdAt:
+        type: string
+      currency:
+        type: string
+      failureReason:
+        type: string
+      id:
+        type: string
+      partner:
+        $ref: '#/definitions/database.Partner'
+      partnerId:
+        type: string
+      periodEnd:
+        type: string
+      periodStart:
+        type: string
+      processedAt:
+        type: string
+      status:
+        $ref: '#/definitions/database.PayoutStatus'
+      transactionId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.PayoutStatus:
+    enum:
+    - pending
+    - processing
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - PayoutStatusPending
+    - PayoutStatusProcessing
+    - PayoutStatusCompleted
+    - PayoutStatusFailed
+  database.ReferralLink:
+    properties:
+      clicks:
+        type: integer
+      code:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      partner:
+        $ref: '#/definitions/database.Partner'
+      partnerId:
+        type: string
+      registrations:
+        type: integer
+      updatedAt:
+        type: string
+      url:
+        type: string
+    type: object
+  database.ReferralStatus:
+    enum:
+    - registered
+    - deposited
+    - active
+    - inactive
+    - unlinked
+    type: string
+    x-enum-varnames:
+    - ReferralStatusRegistered
+    - ReferralStatusDeposited
+    - ReferralStatusActive
+    - ReferralStatusInactive
+    - ReferralStatusUnlinked
+  database.SubAffiliateInvite:
+    properties:
+      acceptedAt:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      expiresAt:
+        type: string
+      id:
+        type: string
+      inviteCode:
+        type: string
+      overrideRate:
+        type: number
+      partner:
+        $ref: '#/definitions/database.Partner'
+      partnerId:
+        type: string
+      status:
+        type: string
+      subPartnerId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.User:
+    properties:
+      binanceEmail:
+        type: string
+      canTrade:
+        type: boolean
+      canWithdraw:
+        type: boolean
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      isWhitelistEnabled:
+        type: boolean
+      kycLevel:
+        type: integer
+      lastName:
+        type: string
+      metaData:
+        additionalProperties: true
+        type: object
+      status:
+        type: integer
+      subAccountId:
+        type: string
+      updatedAt:
+        type: string
+      vipLevel:
+        type: integer
+    type: object
+  partner.ReferralLinkLookup:
+    properties:
+      code:
+        type: string
+      isActive:
+        type: boolean
+      partnerEmail:
+        type: string
+      partnerFullName:
+        type: string
+      partnerId:
+        type: string
+    type: object
+  partner.ReferralListItem:
+    properties:
+      createdAt:
+        type: string
+      endedAt:
+        type: string
+      firstDepositAt:
+        type: string
+      firstTradeAt:
+        type: string
+      id:
+        type: string
+      partnerId:
+        type: string
+      referralLinkId:
+        type: string
+      referredUser:
+        $ref: '#/definitions/partner.ReferralUserRef'
+      referredUserId:
+        type: string
+      registeredAt:
+        type: string
+      startedAt:
+        type: string
+      status:
+        $ref: '#/definitions/database.ReferralStatus'
+    type: object
+  partner.ReferralUserRef:
+    properties:
+      firstName:
+        type: string
+      id:
+        type: string
+      kycLevel:
+        type: integer
+      lastInitial:
+        type: string
+      maskedEmail:
+        type: string
+    type: object
+  structs.ApplicationListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.ApplicationReviewParams:
+    properties:
+      rejectionReason:
+        type: string
+    type: object
+  structs.ChartParams:
+    properties:
+      endDate:
+        type: string
+      groupBy:
+        description: '"day", "week", "month"'
+        type: string
+      startDate:
+        type: string
+    type: object
+  structs.CommissionBreakdownParams:
+    properties:
+      endDate:
+        type: string
+      startDate:
+        type: string
+    type: object
+  structs.CommissionListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      referredUserId:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.DashboardSummaryParams:
+    properties:
+      endDate:
+        type: string
+      startDate:
+        type: string
+    type: object
+  structs.ErrorResponse:
+    properties:
+      body:
+        type: string
+      error_msg:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  structs.PaginationInput:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+    type: object
+  structs.PaginationResponse:
+    properties:
+      items: {}
+      total:
+        type: integer
+    type: object
+  structs.PartnerListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+      tierId:
+        type: string
+    type: object
+  structs.PartnerProfileUpdateParams:
+    properties:
+      companyName:
+        type: string
+      socialMedia:
+        additionalProperties: true
+        type: object
+      website:
+        type: string
+    type: object
+  structs.PartnerSignupParams:
+    properties:
+      audienceSize:
+        type: string
+      companyName:
+        type: string
+      promotionPlan:
+        type: string
+      socialMedia:
+        additionalProperties: true
+        type: object
+      userId:
+        description: |-
+          UserID = Cognito sub of the applying user.
+          Controller populates this from the authenticated JWT; client does not send it.
+        type: string
+      website:
+        type: string
+    type: object
+  structs.PayoutListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      partnerId:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.PayoutReviewParams:
+    properties:
+      failureReason:
+        type: string
+    type: object
+  structs.ReferralLinkCreateParams:
+    properties:
+      code:
+        description: |-
+          Optional partner-supplied code. 5–7 uppercase A-Z/0-9 characters.
+          Empty/omitted → server auto-generates a 7-character code.
+        type: string
+      url:
+        type: string
+    type: object
+  structs.ReferralListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.ResponseBody:
+    properties:
+      body: {}
+      message:
+        type: string
+    type: object
+  structs.SortDate:
+    properties:
+      end_day:
+        type: string
+      start_day:
+        type: string
+    type: object
+  structs.SubAffiliateInviteParams:
+    properties:
+      email:
+        type: string
+      overrideRate:
+        type: number
+    required:
+    - email
+    type: object
+  structs.SubAffiliateListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.SubAffiliateStatsParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+    type: object
+  structs.SuccessResponse:
+    properties:
+      success:
+        type: boolean
+    type: object
+  structs.TierCreateParams:
+    properties:
+      color:
+        type: string
+      commissionRate:
+        type: number
+      isDefault:
+        type: boolean
+      level:
+        type: integer
+      maxVolume:
+        type: number
+      minActiveClients:
+        type: integer
+      minVolume:
+        type: number
+      name:
+        type: string
+    required:
+    - commissionRate
+    - level
+    - name
+    type: object
+  structs.TierUpdateParams:
+    properties:
+      color:
+        type: string
+      commissionRate:
+        type: number
+      isDefault:
+        type: boolean
+      level:
+        type: integer
+      maxVolume:
+        type: number
+      minActiveClients:
+        type: integer
+      minVolume:
+        type: number
+      name:
+        type: string
+    type: object
+  structs.TradeEventParams:
+    properties:
+      symbol:
+        type: string
+      tradeAmount:
+        type: number
+      tradeFee:
+        type: number
+      tradeId:
+        type: string
+      tradeTimestamp:
+        type: integer
+      userId:
+        type: string
+    required:
+    - tradeAmount
+    - tradeFee
+    - tradeId
+    - userId
+    type: object
+  structs.UnlinkReferralEventParams:
+    properties:
+      userId:
+        type: string
+    required:
+    - userId
+    type: object
+  structs.UserDepositedParams:
+    properties:
+      amount:
+        type: number
+      userId:
+        type: string
+    required:
+    - amount
+    - userId
+    type: object
+  structs.UserRegisteredParams:
+    properties:
+      referralCode:
+        type: string
+      userId:
+        type: string
+    required:
+    - referralCode
+    - userId
+    type: object
+host: localhost:8090
+info:
+  contact: {}
+  description: |-
+    Partner program backend — public, partner, admin, system endpoints.
+    Authentication is split into three layers:
+    • BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.
+    • InternalKey: `X-Internal-Key` header — only the xmeta-monorepo server should send this.
+  title: xmeta Partner API
+  version: "1.0"
+paths:
+  /admin/partner/analytics/commission-trend:
+    post:
+      consumes:
+      - application/json
+      description: Returns time-bucketed commission totals across all partners
+      parameters:
+      - description: Chart range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ChartParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Commission trend chart
+      tags:
+      - Admin Analytics
+  /admin/partner/analytics/referral-funnel:
+    post:
+      consumes:
+      - application/json
+      description: Returns conversion-funnel metrics from click to commissioned trade
+      parameters:
+      - description: Date range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.DashboardSummaryParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Referral funnel metrics
+      tags:
+      - Admin Analytics
+  /admin/partner/analytics/summary:
+    post:
+      consumes:
+      - application/json
+      description: Returns top-level KPIs for the admin analytics dashboard
+      parameters:
+      - description: Date range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.DashboardSummaryParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Admin analytics summary
+      tags:
+      - Admin Analytics
+  /admin/partner/analytics/top-partners:
+    post:
+      consumes:
+      - application/json
+      description: Returns the highest-earning partners ranked by commission volume
+      parameters:
+      - description: Pagination input
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PaginationInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Top partners leaderboard
+      tags:
+      - Admin Analytics
+  /admin/partner/applications/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Marks an application approved and provisions the partner account
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerApplication'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve partner application
+      tags:
+      - Admin Applications
+  /admin/partner/applications/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Marks an application rejected with a reason
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ApplicationReviewParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerApplication'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject partner application
+      tags:
+      - Admin Applications
+  /admin/partner/applications/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns one partner application with full submission data
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerApplication'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get application detail
+      tags:
+      - Admin Applications
+  /admin/partner/applications/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of partner applications for admin review
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ApplicationListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner applications
+      tags:
+      - Admin Applications
+  /admin/partner/config/tiers:
+    get:
+      consumes:
+      - application/json
+      description: Returns all commission tiers for admin configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/database.PartnerTier'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List commission tiers (admin)
+      tags:
+      - Admin Config
+    post:
+      consumes:
+      - application/json
+      description: Creates a new commission tier configuration
+      parameters:
+      - description: Tier create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.TierCreateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerTier'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create commission tier
+      tags:
+      - Admin Config
+  /admin/partner/config/tiers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a commission tier configuration
+      parameters:
+      - description: Tier ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.SuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete commission tier
+      tags:
+      - Admin Config
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing commission tier configuration
+      parameters:
+      - description: Tier ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tier update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.TierUpdateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerTier'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update commission tier
+      tags:
+      - Admin Config
+  /admin/partner/partners/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Activates, suspends, or otherwise changes the partner status
+      parameters:
+      - description: Partner ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update payload (status)
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Partner'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update partner status
+      tags:
+      - Admin Partners
+  /admin/partner/partners/{id}/tier:
+    put:
+      consumes:
+      - application/json
+      description: Assigns the partner to a different commission tier
+      parameters:
+      - description: Partner ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tier update payload (tierId)
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Partner'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update partner tier
+      tags:
+      - Admin Partners
+  /admin/partner/partners/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns one partner with related stats and tier info
+      parameters:
+      - description: Partner ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Partner'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get partner detail
+      tags:
+      - Admin Partners
+  /admin/partner/partners/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of partners for admin management
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PartnerListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partners
+      tags:
+      - Admin Partners
+  /admin/partner/payouts/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves a pending payout for processing
+      parameters:
+      - description: Payout ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Payout'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve payout
+      tags:
+      - Admin Payouts
+  /admin/partner/payouts/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects a pending payout with a reason
+      parameters:
+      - description: Payout ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PayoutReviewParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Payout'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject payout
+      tags:
+      - Admin Payouts
+  /admin/partner/payouts/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns one payout with line items for admin review
+      parameters:
+      - description: Payout ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Payout'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payout detail (admin)
+      tags:
+      - Admin Payouts
+  /admin/partner/payouts/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of payout records across all partners
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PayoutListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List payouts (admin)
+      tags:
+      - Admin Payouts
+  /admin/partner/payouts/pending:
+    post:
+      consumes:
+      - application/json
+      description: Returns payouts awaiting admin approval, paginated
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PayoutListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List pending payouts
+      tags:
+      - Admin Payouts
+  /internal/link-referral:
+    post:
+      consumes:
+      - application/json
+      description: Called by xmeta-monorepo right after Cognito signup completes for
+        any user that arrived through a `?ref=CODE` link. Mirrors `POST /partner/auth/link-referral`
+        but is server-to-server (X-Internal-Key) instead of user-authenticated.
+      parameters:
+      - description: Referral attach payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.UserRegisteredParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.SuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Link a freshly signed-up user to a partner
+      tags:
+      - System Events
+  /internal/referral-links/{code}:
+    get:
+      description: Looks up a referral code so the monorepo signup/settings form can
+        show real-time "valid / belongs to {Name}" feedback before the user submits.
+        Returns 404 if the code is unknown.
+      parameters:
+      - description: Referral code, e.g. ABC1234
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/partner.ReferralLinkLookup'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Validate a referral code
+      tags:
+      - System Events
+  /internal/trade-event:
+    post:
+      consumes:
+      - application/json
+      description: Ingests a trade event from monorepo and runs the commission engine
+      parameters:
+      - description: Trade event payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.TradeEventParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.SuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Process a trade event
+      tags:
+      - System Events
+  /internal/unlink-referral:
+    post:
+      consumes:
+      - application/json
+      description: Server-side counterpart to `POST /partner/auth/unlink-referral`.
+        Called by xmeta-monorepo on account closure, compliance flags, or other system-driven
+        detachments. Past commissions stay attributed to whoever was active at trade
+        time.
+      parameters:
+      - description: Unlink payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.UnlinkReferralEventParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.SuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Unlink a user from their current partner
+      tags:
+      - System Events
+  /internal/user-deposited:
+    post:
+      consumes:
+      - application/json
+      description: Records a referred user deposit and runs deposit-based commission
+        rules
+      parameters:
+      - description: User deposit payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.UserDepositedParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.SuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Process user deposit
+      tags:
+      - System Events
+  /partner/auth/apply:
+    post:
+      consumes:
+      - application/json
+      description: Creates a partner application for the authenticated user
+      parameters:
+      - description: Application payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PartnerSignupParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerApplication'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit partner application
+      tags:
+      - Partner Auth
+  /partner/auth/info:
+    get:
+      consumes:
+      - application/json
+      description: Returns the authenticated partner's profile and account info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Partner'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get partner profile
+      tags:
+      - Partner Auth
+  /partner/auth/profile:
+    put:
+      consumes:
+      - application/json
+      description: Updates the authenticated partner's editable profile fields
+      parameters:
+      - description: Profile update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PartnerProfileUpdateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Partner'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update partner profile
+      tags:
+      - Partner Auth
+  /partner/auth/status:
+    get:
+      consumes:
+      - application/json
+      description: Returns user, partner, and application records for routing decisions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Partner auth status
+      tags:
+      - Partner Auth
+  /partner/auth/tier:
+    get:
+      consumes:
+      - application/json
+      description: Returns the authenticated partner's current tier and progression
+        info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.PartnerTier'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get partner tier details
+      tags:
+      - Partner Auth
+  /partner/commissions/breakdown:
+    post:
+      consumes:
+      - application/json
+      description: Returns commissions grouped by source (direct, sub-affiliate, etc.)
+      parameters:
+      - description: Breakdown filters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.CommissionBreakdownParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Commission breakdown
+      tags:
+      - Partner Commissions
+  /partner/commissions/daily-summary:
+    post:
+      consumes:
+      - application/json
+      description: Returns daily commission totals for the chart on the earnings page
+      parameters:
+      - description: Chart range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ChartParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daily commission summary
+      tags:
+      - Partner Commissions
+  /partner/commissions/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of commission records for the partner
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.CommissionListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner commissions
+      tags:
+      - Partner Commissions
+  /partner/dashboard/earnings-chart:
+    post:
+      consumes:
+      - application/json
+      description: Returns time-bucketed earnings data for the dashboard chart
+      parameters:
+      - description: Chart range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ChartParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Partner earnings chart
+      tags:
+      - Partner Dashboard
+  /partner/dashboard/referral-chart:
+    post:
+      consumes:
+      - application/json
+      description: Returns time-bucketed referral counts for the dashboard chart
+      parameters:
+      - description: Chart range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ChartParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Partner referral chart
+      tags:
+      - Partner Dashboard
+  /partner/dashboard/summary:
+    post:
+      consumes:
+      - application/json
+      description: Returns top-level KPIs for the partner dashboard
+      parameters:
+      - description: Date range filter
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.DashboardSummaryParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Partner dashboard summary
+      tags:
+      - Partner Dashboard
+  /partner/dashboard/tier-progress:
+    post:
+      consumes:
+      - application/json
+      description: Returns current tier and progress toward next tier thresholds
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Partner tier progression
+      tags:
+      - Partner Dashboard
+  /partner/links/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new referral link for the authenticated partner
+      parameters:
+      - description: Link create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralLinkCreateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.ReferralLink'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create referral link
+      tags:
+      - Partner Links
+  /partner/links/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of the partner's referral links
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List referral links
+      tags:
+      - Partner Links
+  /partner/payouts/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns one payout record with its line items
+      parameters:
+      - description: Payout ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Payout'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payout detail
+      tags:
+      - Partner Payouts
+  /partner/payouts/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of payout records for the partner
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PayoutListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner payouts
+      tags:
+      - Partner Payouts
+  /partner/payouts/pending:
+    get:
+      consumes:
+      - application/json
+      description: Returns the partner's currently pending payout balance and breakdown
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Pending payout balance
+      tags:
+      - Partner Payouts
+  /partner/referrals/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns one referral for the authenticated partner. User PII is
+        masked — only first name + last initial + masked email are exposed.
+      parameters:
+      - description: Referral ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/partner.ReferralListItem'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get referral detail
+      tags:
+      - Partner Referrals
+  /partner/referrals/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of referrals for the authenticated partner.
+        User PII is masked — only first name + last initial + masked email are exposed.
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  allOf:
+                  - $ref: '#/definitions/structs.PaginationResponse'
+                  - properties:
+                      items:
+                        items:
+                          $ref: '#/definitions/partner.ReferralListItem'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner referrals
+      tags:
+      - Partner Referrals
+  /partner/referrals/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns aggregate referral counts and conversion stats for the
+        partner
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Referral aggregate stats
+      tags:
+      - Partner Referrals
+  /partner/sub-affiliates/invite:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new sub-affiliate invite under the authenticated partner
+      parameters:
+      - description: Invite payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.SubAffiliateInviteParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.SubAffiliateInvite'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invite a sub-affiliate
+      tags:
+      - Partner Sub-Affiliates
+  /partner/sub-affiliates/invite/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Returns the sub-affiliate invite identified by code
+      parameters:
+      - description: Invite code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.SubAffiliateInvite'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get sub-affiliate invite detail
+      tags:
+      - Partner Sub-Affiliates
+  /partner/sub-affiliates/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of sub-affiliates under the partner
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.SubAffiliateListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List sub-affiliates
+      tags:
+      - Partner Sub-Affiliates
+  /partner/sub-affiliates/stats:
+    post:
+      consumes:
+      - application/json
+      description: Returns aggregate statistics for the partner's sub-affiliate network
+      parameters:
+      - description: Stats filters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.SubAffiliateStatsParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Sub-affiliate stats
+      tags:
+      - Partner Sub-Affiliates
+  /public/partner/ref/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Records a click on a referral code and returns redirect info
+      parameters:
+      - description: Referral code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      summary: Track referral link click
+      tags:
+      - Public
+  /public/partner/tiers:
+    get:
+      consumes:
+      - application/json
+      description: Returns all commission tiers ordered by level for the public landing
+        page
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  items:
+                    $ref: '#/definitions/database.PartnerTier'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      summary: List commission tiers
+      tags:
+      - Public
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: '"Bearer {Cognito ID Token}" format'
+    in: header
+    name: Authorization
+    type: apiKey
+  InternalKey:
+    description: Server-to-server API key shared with xmeta-monorepo
+    in: header
+    name: X-Internal-Key
+    type: apiKey
+swagger: "2.0"

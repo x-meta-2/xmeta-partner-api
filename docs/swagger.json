@@ -1,0 +1,4322 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Partner program backend — public, partner, admin, system endpoints.\nAuthentication is split into three layers:\n• BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.\n• InternalKey: `X-Internal-Key` header — only the xmeta-monorepo server should send this.",
+        "title": "xmeta Partner API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8090",
+    "basePath": "/api/v1",
+    "paths": {
+        "/admin/partner/analytics/commission-trend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns time-bucketed commission totals across all partners",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Analytics"
+                ],
+                "summary": "Commission trend chart",
+                "parameters": [
+                    {
+                        "description": "Chart range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ChartParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/analytics/referral-funnel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns conversion-funnel metrics from click to commissioned trade",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Analytics"
+                ],
+                "summary": "Referral funnel metrics",
+                "parameters": [
+                    {
+                        "description": "Date range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.DashboardSummaryParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/analytics/summary": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns top-level KPIs for the admin analytics dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Analytics"
+                ],
+                "summary": "Admin analytics summary",
+                "parameters": [
+                    {
+                        "description": "Date range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.DashboardSummaryParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/analytics/top-partners": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the highest-earning partners ranked by commission volume",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Analytics"
+                ],
+                "summary": "Top partners leaderboard",
+                "parameters": [
+                    {
+                        "description": "Pagination input",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PaginationInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/applications/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one partner application with full submission data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Applications"
+                ],
+                "summary": "Get application detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerApplication"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/applications/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of partner applications for admin review",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Applications"
+                ],
+                "summary": "List partner applications",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ApplicationListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/applications/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an application approved and provisions the partner account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Applications"
+                ],
+                "summary": "Approve partner application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerApplication"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/applications/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks an application rejected with a reason",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Applications"
+                ],
+                "summary": "Reject partner application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ApplicationReviewParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerApplication"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/config/tiers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all commission tiers for admin configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Config"
+                ],
+                "summary": "List commission tiers (admin)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/database.PartnerTier"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new commission tier configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Config"
+                ],
+                "summary": "Create commission tier",
+                "parameters": [
+                    {
+                        "description": "Tier create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.TierCreateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerTier"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/config/tiers/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing commission tier configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Config"
+                ],
+                "summary": "Update commission tier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tier ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tier update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.TierUpdateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerTier"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a commission tier configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Config"
+                ],
+                "summary": "Delete commission tier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tier ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.SuccessResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/partners/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one partner with related stats and tier info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Partners"
+                ],
+                "summary": "Get partner detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Partner ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Partner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/partners/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of partners for admin management",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Partners"
+                ],
+                "summary": "List partners",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PartnerListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/partners/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Activates, suspends, or otherwise changes the partner status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Partners"
+                ],
+                "summary": "Update partner status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Partner ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status update payload (status)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Partner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/partners/{id}/tier": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Assigns the partner to a different commission tier",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Partners"
+                ],
+                "summary": "Update partner tier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Partner ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Tier update payload (tierId)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Partner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/payouts/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one payout with line items for admin review",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "Get payout detail (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Payout"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/payouts/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of payout records across all partners",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "List payouts (admin)",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PayoutListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/payouts/pending": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns payouts awaiting admin approval, paginated",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "List pending payouts",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PayoutListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/payouts/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approves a pending payout for processing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "Approve payout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Payout"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/payouts/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rejects a pending payout with a reason",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "Reject payout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PayoutReviewParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Payout"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/link-referral": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Called by xmeta-monorepo right after Cognito signup completes for any user that arrived through a `?ref=CODE` link. Mirrors `POST /partner/auth/link-referral` but is server-to-server (X-Internal-Key) instead of user-authenticated.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Link a freshly signed-up user to a partner",
+                "parameters": [
+                    {
+                        "description": "Referral attach payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.UserRegisteredParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.SuccessResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/referral-links/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Looks up a referral code so the monorepo signup/settings form can show real-time \"valid / belongs to {Name}\" feedback before the user submits. Returns 404 if the code is unknown.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Validate a referral code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Referral code, e.g. ABC1234",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/partner.ReferralLinkLookup"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/trade-event": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Ingests a trade event from monorepo and runs the commission engine",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Process a trade event",
+                "parameters": [
+                    {
+                        "description": "Trade event payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.TradeEventParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.SuccessResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/unlink-referral": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Server-side counterpart to `POST /partner/auth/unlink-referral`. Called by xmeta-monorepo on account closure, compliance flags, or other system-driven detachments. Past commissions stay attributed to whoever was active at trade time.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Unlink a user from their current partner",
+                "parameters": [
+                    {
+                        "description": "Unlink payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.UnlinkReferralEventParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.SuccessResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/user-deposited": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Records a referred user deposit and runs deposit-based commission rules",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Process user deposit",
+                "parameters": [
+                    {
+                        "description": "User deposit payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.UserDepositedParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.SuccessResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/auth/apply": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a partner application for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Auth"
+                ],
+                "summary": "Submit partner application",
+                "parameters": [
+                    {
+                        "description": "Application payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PartnerSignupParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerApplication"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/auth/info": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated partner's profile and account info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Auth"
+                ],
+                "summary": "Get partner profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Partner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/auth/profile": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the authenticated partner's editable profile fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Auth"
+                ],
+                "summary": "Update partner profile",
+                "parameters": [
+                    {
+                        "description": "Profile update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PartnerProfileUpdateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Partner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/auth/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns user, partner, and application records for routing decisions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Auth"
+                ],
+                "summary": "Partner auth status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/auth/tier": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated partner's current tier and progression info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Auth"
+                ],
+                "summary": "Get partner tier details",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.PartnerTier"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/commissions/breakdown": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns commissions grouped by source (direct, sub-affiliate, etc.)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Commissions"
+                ],
+                "summary": "Commission breakdown",
+                "parameters": [
+                    {
+                        "description": "Breakdown filters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.CommissionBreakdownParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/commissions/daily-summary": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns daily commission totals for the chart on the earnings page",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Commissions"
+                ],
+                "summary": "Daily commission summary",
+                "parameters": [
+                    {
+                        "description": "Chart range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ChartParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/commissions/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of commission records for the partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Commissions"
+                ],
+                "summary": "List partner commissions",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.CommissionListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/dashboard/earnings-chart": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns time-bucketed earnings data for the dashboard chart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Dashboard"
+                ],
+                "summary": "Partner earnings chart",
+                "parameters": [
+                    {
+                        "description": "Chart range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ChartParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/dashboard/referral-chart": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns time-bucketed referral counts for the dashboard chart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Dashboard"
+                ],
+                "summary": "Partner referral chart",
+                "parameters": [
+                    {
+                        "description": "Chart range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ChartParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/dashboard/summary": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns top-level KPIs for the partner dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Dashboard"
+                ],
+                "summary": "Partner dashboard summary",
+                "parameters": [
+                    {
+                        "description": "Date range filter",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.DashboardSummaryParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/dashboard/tier-progress": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns current tier and progress toward next tier thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Dashboard"
+                ],
+                "summary": "Partner tier progression",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/links/create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new referral link for the authenticated partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Links"
+                ],
+                "summary": "Create referral link",
+                "parameters": [
+                    {
+                        "description": "Link create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralLinkCreateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.ReferralLink"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/links/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of the partner's referral links",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Links"
+                ],
+                "summary": "List referral links",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/payouts/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one payout record with its line items",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Payouts"
+                ],
+                "summary": "Get payout detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Payout"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/payouts/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of payout records for the partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Payouts"
+                ],
+                "summary": "List partner payouts",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PayoutListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/payouts/pending": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the partner's currently pending payout balance and breakdown",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Payouts"
+                ],
+                "summary": "Pending payout balance",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/referrals/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one referral for the authenticated partner. User PII is masked — only first name + last initial + masked email are exposed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Referrals"
+                ],
+                "summary": "Get referral detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Referral ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/partner.ReferralListItem"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/referrals/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of referrals for the authenticated partner. User PII is masked — only first name + last initial + masked email are exposed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Referrals"
+                ],
+                "summary": "List partner referrals",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/structs.PaginationResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/partner.ReferralListItem"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/referrals/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregate referral counts and conversion stats for the partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Referrals"
+                ],
+                "summary": "Referral aggregate stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/sub-affiliates/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new sub-affiliate invite under the authenticated partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Sub-Affiliates"
+                ],
+                "summary": "Invite a sub-affiliate",
+                "parameters": [
+                    {
+                        "description": "Invite payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.SubAffiliateInviteParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.SubAffiliateInvite"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/sub-affiliates/invite/{code}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the sub-affiliate invite identified by code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Sub-Affiliates"
+                ],
+                "summary": "Get sub-affiliate invite detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.SubAffiliateInvite"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/sub-affiliates/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of sub-affiliates under the partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Sub-Affiliates"
+                ],
+                "summary": "List sub-affiliates",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.SubAffiliateListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/sub-affiliates/stats": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregate statistics for the partner's sub-affiliate network",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Sub-Affiliates"
+                ],
+                "summary": "Sub-affiliate stats",
+                "parameters": [
+                    {
+                        "description": "Stats filters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.SubAffiliateStatsParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/partner/ref/{code}": {
+            "get": {
+                "description": "Records a click on a referral code and returns redirect info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "Track referral link click",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Referral code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/partner/tiers": {
+            "get": {
+                "description": "Returns all commission tiers ordered by level for the public landing page",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Public"
+                ],
+                "summary": "List commission tiers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/database.PartnerTier"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "database.ApplicationStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "approved",
+                "rejected"
+            ],
+            "x-enum-varnames": [
+                "ApplicationStatusPending",
+                "ApplicationStatusApproved",
+                "ApplicationStatusRejected"
+            ]
+        },
+        "database.Partner": {
+            "type": "object",
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metaData": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "parent": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "parentId": {
+                    "type": "string"
+                },
+                "referralCode": {
+                    "type": "string"
+                },
+                "socialMedia": {
+                    "description": "SocialMedia mirrors PartnerApplication.SocialMedia at approve time.\nApplication stays as the review snapshot; this column is the\npartner's *current* profile (Settings edits land here).\n\n`serializer:json` round-trips `map[string]interface{}` through\nencoding/json so the column can stay TEXT — works with both lib/pq\nand pgx. Partial `Updates(map)` bypass the serializer, so the\nservice marshals the value to a JSON string before assigning.",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "status": {
+                    "$ref": "#/definitions/database.PartnerStatus"
+                },
+                "tier": {
+                    "$ref": "#/definitions/database.PartnerTier"
+                },
+                "tierId": {
+                    "type": "string"
+                },
+                "totalEarnings": {
+                    "type": "number"
+                },
+                "totalReferrals": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/database.User"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.PartnerApplication": {
+            "type": "object",
+            "properties": {
+                "audienceSize": {
+                    "type": "string"
+                },
+                "companyName": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "promotionPlan": {
+                    "type": "string"
+                },
+                "rejectionReason": {
+                    "type": "string"
+                },
+                "reviewedAt": {
+                    "type": "string"
+                },
+                "reviewedBy": {
+                    "type": "string"
+                },
+                "socialMedia": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "status": {
+                    "$ref": "#/definitions/database.ApplicationStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/database.User"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.PartnerStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "active",
+                "suspended"
+            ],
+            "x-enum-varnames": [
+                "PartnerStatusPending",
+                "PartnerStatusActive",
+                "PartnerStatusSuspended"
+            ]
+        },
+        "database.PartnerTier": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "commissionRate": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "maxVolume": {
+                    "type": "number"
+                },
+                "minActiveClients": {
+                    "type": "integer"
+                },
+                "minVolume": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.Payout": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "approvedBy": {
+                    "type": "string"
+                },
+                "commissionCount": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "failureReason": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partner": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "periodEnd": {
+                    "type": "string"
+                },
+                "periodStart": {
+                    "type": "string"
+                },
+                "processedAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/database.PayoutStatus"
+                },
+                "transactionId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.PayoutStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "processing",
+                "completed",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "PayoutStatusPending",
+                "PayoutStatusProcessing",
+                "PayoutStatusCompleted",
+                "PayoutStatusFailed"
+            ]
+        },
+        "database.ReferralLink": {
+            "type": "object",
+            "properties": {
+                "clicks": {
+                    "type": "integer"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "partner": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "registrations": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.ReferralStatus": {
+            "type": "string",
+            "enum": [
+                "registered",
+                "deposited",
+                "active",
+                "inactive",
+                "unlinked"
+            ],
+            "x-enum-varnames": [
+                "ReferralStatusRegistered",
+                "ReferralStatusDeposited",
+                "ReferralStatusActive",
+                "ReferralStatusInactive",
+                "ReferralStatusUnlinked"
+            ]
+        },
+        "database.SubAffiliateInvite": {
+            "type": "object",
+            "properties": {
+                "acceptedAt": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inviteCode": {
+                    "type": "string"
+                },
+                "overrideRate": {
+                    "type": "number"
+                },
+                "partner": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subPartnerId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.User": {
+            "type": "object",
+            "properties": {
+                "binanceEmail": {
+                    "type": "string"
+                },
+                "canTrade": {
+                    "type": "boolean"
+                },
+                "canWithdraw": {
+                    "type": "boolean"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isWhitelistEnabled": {
+                    "type": "boolean"
+                },
+                "kycLevel": {
+                    "type": "integer"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "metaData": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "subAccountId": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "vipLevel": {
+                    "type": "integer"
+                }
+            }
+        },
+        "partner.ReferralLinkLookup": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "partnerEmail": {
+                    "type": "string"
+                },
+                "partnerFullName": {
+                    "type": "string"
+                },
+                "partnerId": {
+                    "type": "string"
+                }
+            }
+        },
+        "partner.ReferralListItem": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "endedAt": {
+                    "type": "string"
+                },
+                "firstDepositAt": {
+                    "type": "string"
+                },
+                "firstTradeAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "referralLinkId": {
+                    "type": "string"
+                },
+                "referredUser": {
+                    "$ref": "#/definitions/partner.ReferralUserRef"
+                },
+                "referredUserId": {
+                    "type": "string"
+                },
+                "registeredAt": {
+                    "type": "string"
+                },
+                "startedAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/database.ReferralStatus"
+                }
+            }
+        },
+        "partner.ReferralUserRef": {
+            "type": "object",
+            "properties": {
+                "firstName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kycLevel": {
+                    "type": "integer"
+                },
+                "lastInitial": {
+                    "type": "string"
+                },
+                "maskedEmail": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ApplicationListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ApplicationReviewParams": {
+            "type": "object",
+            "properties": {
+                "rejectionReason": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ChartParams": {
+            "type": "object",
+            "properties": {
+                "endDate": {
+                    "type": "string"
+                },
+                "groupBy": {
+                    "description": "\"day\", \"week\", \"month\"",
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.CommissionBreakdownParams": {
+            "type": "object",
+            "properties": {
+                "endDate": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.CommissionListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "referredUserId": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.DashboardSummaryParams": {
+            "type": "object",
+            "properties": {
+                "endDate": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "error_msg": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "structs.PaginationInput": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                }
+            }
+        },
+        "structs.PaginationResponse": {
+            "type": "object",
+            "properties": {
+                "items": {},
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "structs.PartnerListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tierId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.PartnerProfileUpdateParams": {
+            "type": "object",
+            "properties": {
+                "companyName": {
+                    "type": "string"
+                },
+                "socialMedia": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.PartnerSignupParams": {
+            "type": "object",
+            "properties": {
+                "audienceSize": {
+                    "type": "string"
+                },
+                "companyName": {
+                    "type": "string"
+                },
+                "promotionPlan": {
+                    "type": "string"
+                },
+                "socialMedia": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "userId": {
+                    "description": "UserID = Cognito sub of the applying user.\nController populates this from the authenticated JWT; client does not send it.",
+                    "type": "string"
+                },
+                "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.PayoutListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.PayoutReviewParams": {
+            "type": "object",
+            "properties": {
+                "failureReason": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ReferralLinkCreateParams": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "Optional partner-supplied code. 5–7 uppercase A-Z/0-9 characters.\nEmpty/omitted → server auto-generates a 7-character code.",
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ReferralListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ResponseBody": {
+            "type": "object",
+            "properties": {
+                "body": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.SortDate": {
+            "type": "object",
+            "properties": {
+                "end_day": {
+                    "type": "string"
+                },
+                "start_day": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.SubAffiliateInviteParams": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "overrideRate": {
+                    "type": "number"
+                }
+            }
+        },
+        "structs.SubAffiliateListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.SubAffiliateStatsParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                }
+            }
+        },
+        "structs.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "structs.TierCreateParams": {
+            "type": "object",
+            "required": [
+                "commissionRate",
+                "level",
+                "name"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "commissionRate": {
+                    "type": "number"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "maxVolume": {
+                    "type": "number"
+                },
+                "minActiveClients": {
+                    "type": "integer"
+                },
+                "minVolume": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.TierUpdateParams": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "commissionRate": {
+                    "type": "number"
+                },
+                "isDefault": {
+                    "type": "boolean"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "maxVolume": {
+                    "type": "number"
+                },
+                "minActiveClients": {
+                    "type": "integer"
+                },
+                "minVolume": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.TradeEventParams": {
+            "type": "object",
+            "required": [
+                "tradeAmount",
+                "tradeFee",
+                "tradeId",
+                "userId"
+            ],
+            "properties": {
+                "symbol": {
+                    "type": "string"
+                },
+                "tradeAmount": {
+                    "type": "number"
+                },
+                "tradeFee": {
+                    "type": "number"
+                },
+                "tradeId": {
+                    "type": "string"
+                },
+                "tradeTimestamp": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.UnlinkReferralEventParams": {
+            "type": "object",
+            "required": [
+                "userId"
+            ],
+            "properties": {
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.UserDepositedParams": {
+            "type": "object",
+            "required": [
+                "amount",
+                "userId"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.UserRegisteredParams": {
+            "type": "object",
+            "required": [
+                "referralCode",
+                "userId"
+            ],
+            "properties": {
+                "referralCode": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "\"Bearer {Cognito ID Token}\" format",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "InternalKey": {
+            "description": "Server-to-server API key shared with xmeta-monorepo",
+            "type": "apiKey",
+            "name": "X-Internal-Key",
+            "in": "header"
+        }
+    }
+}

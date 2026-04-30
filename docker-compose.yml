@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: xmeta_partner
+      POSTGRES_PASSWORD: xmeta_partner_dev
+      POSTGRES_DB: xmeta_partner_db
+    volumes:
+      - partner_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xmeta_partner"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  partner-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      APP_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: xmeta_partner
+      DB_PASSWORD: xmeta_partner_dev
+      DB_NAME: xmeta_partner_db
+      DB_TIMEZONE: Asia/Ulaanbaatar
+      DB_AUTO_MIGRATE: "true"
+      DB_RUN_MIGRATIONS: "false"
+      AWS_REGION: ap-southeast-1
+      COGNITO_USER_POOL_ID: ""
+      COGNITO_CLIENT_ID: ""
+      PARTNER_COGNITO_USER_POOL_ID: ""
+      PARTNER_COGNITO_CLIENT_ID: ""
+      INTERNAL_API_KEY: dev-internal-key-2026
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  partner-portal:
+    build:
+      context: ../xmeta-partner-portal
+      dockerfile: Dockerfile
+    ports:
+      - "8082:80"
+    depends_on:
+      - partner-api
+    restart: unless-stopped
+
+volumes:
+  partner_pg_data:
