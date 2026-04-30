@@ -1,59 +1,98 @@
-version: '3.8'
+# Docker Compose for Partner API + Database + Nginx
+# Frontend (xmeta-partner-web) is deployed separately on Vercel.
 
 services:
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
   postgres:
     image: postgres:16-alpine
+    container_name: xmeta_partner_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      TZ: Asia/Ulaanbaatar
     ports:
       - "5433:5432"
-    environment:
-      POSTGRES_USER: xmeta_partner
-      POSTGRES_PASSWORD: xmeta_partner_dev
-      POSTGRES_DB: xmeta_partner_db
     volumes:
       - partner_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U xmeta_partner"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - partner_network
 
-  partner-api:
+  # ==========================================
+  # Go Backend API
+  # ==========================================
+  backend:
+    image: ${DOCKER_IMAGE:-xmeta-partner-api-local}
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8081:8080"
+    container_name: xmeta_partner_backend
+    restart: always
+    expose:
+      - "8080"
     environment:
+      # App
       APP_PORT: 8080
+      GIN_MODE: release
+      # Database
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: xmeta_partner
-      DB_PASSWORD: xmeta_partner_dev
-      DB_NAME: xmeta_partner_db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
       DB_TIMEZONE: Asia/Ulaanbaatar
-      DB_AUTO_MIGRATE: "true"
-      DB_RUN_MIGRATIONS: "false"
-      AWS_REGION: ap-southeast-1
-      COGNITO_USER_POOL_ID: ""
-      COGNITO_CLIENT_ID: ""
-      PARTNER_COGNITO_USER_POOL_ID: ""
-      PARTNER_COGNITO_CLIENT_ID: ""
-      INTERNAL_API_KEY: dev-internal-key-2026
-      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:8082"
+      DB_AUTO_MIGRATE: ${DB_AUTO_MIGRATE:-false}
+      DB_RUN_MIGRATIONS: ${DB_RUN_MIGRATIONS:-false}
+      # AWS Cognito (admin pool — used by /admin/partner/* endpoints)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+      # AWS Cognito (partner pool — used by /partner/* endpoints)
+      PARTNER_COGNITO_USER_POOL_ID: ${PARTNER_COGNITO_USER_POOL_ID}
+      PARTNER_COGNITO_CLIENT_ID: ${PARTNER_COGNITO_CLIENT_ID}
+      # Internal API key (xmeta-monorepo → partner-api events)
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # CORS — partner-portal + admin-portal origins
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - partner_network
 
-  partner-portal:
-    build:
-      context: ../xmeta-partner-portal
-      dockerfile: Dockerfile
+  # ==========================================
+  # Nginx Gateway (HTTP/HTTPS termination)
+  # ==========================================
+  nginx:
+    image: nginx:alpine
+    container_name: xmeta_partner_nginx
+    restart: always
     ports:
-      - "8082:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/certbot:/var/www/certbot:ro
     depends_on:
-      - partner-api
-    restart: unless-stopped
+      - backend
+    networks:
+      - partner_network
 
 volumes:
   partner_pg_data:
+    driver: local
+
+networks:
+  partner_network:
+    driver: bridge
