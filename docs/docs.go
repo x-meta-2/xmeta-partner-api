@@ -1433,6 +1433,130 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/partner/referrals/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a referral with the linked user + partner, plus the user's commission history under that partner (last 50) and aggregate totals.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Referrals"
+                ],
+                "summary": "Referral detail (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Referral ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/referrals/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated referrals across all partners or filtered to one (` + "`" + `partnerId` + "`" + `). Hides historical (ended_at NOT NULL) rows by default; set ` + "`" + `includeHistorical=true` + "`" + ` to inspect past partner relationships.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Referrals"
+                ],
+                "summary": "List partner referrals (admin)",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.AdminReferralListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/internal/link-referral": {
             "post": {
                 "security": [
@@ -3454,6 +3578,43 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "maskedEmail": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.AdminReferralListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "includeHistorical": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
                     "type": "string"
                 }
             }

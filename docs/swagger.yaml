@@ -290,6 +290,31 @@ definitions:
       maskedEmail:
         type: string
     type: object
+  structs.AdminReferralListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      includeHistorical:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      partnerId:
+        type: string
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
   structs.ApplicationListParams:
     properties:
       current:
@@ -1474,6 +1499,85 @@ paths:
       summary: List pending payouts
       tags:
       - Admin Payouts
+  /admin/partner/referrals/detail/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a referral with the linked user + partner, plus the user's
+        commission history under that partner (last 50) and aggregate totals.
+      parameters:
+      - description: Referral ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Referral detail (admin)
+      tags:
+      - Admin Referrals
+  /admin/partner/referrals/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns paginated referrals across all partners or filtered to
+        one (`partnerId`). Hides historical (ended_at NOT NULL) rows by default; set
+        `includeHistorical=true` to inspect past partner relationships.
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.AdminReferralListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner referrals (admin)
+      tags:
+      - Admin Referrals
   /internal/link-referral:
     post:
       consumes:

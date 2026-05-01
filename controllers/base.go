@@ -40,6 +40,7 @@ func Register(router *gin.RouterGroup) {
 	adminGroup := router.Group("admin/partner")
 	admin.ApplicationController{Controller: bc}.Register(adminGroup.Group("applications"))
 	admin.PartnerController{Controller: bc}.Register(adminGroup.Group("partners"))
+	admin.ReferralController{Controller: bc}.Register(adminGroup.Group("referrals"))
 	admin.ConfigController{Controller: bc}.Register(adminGroup.Group("config"))
 	admin.PayoutController{Controller: bc}.Register(adminGroup.Group("payouts"))
 	admin.AnalyticsController{Controller: bc}.Register(adminGroup.Group("analytics"))
