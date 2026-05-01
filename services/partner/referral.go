@@ -200,29 +200,13 @@ func (s *ReferralService) LinkReferral(userID, code string) error {
 			return err
 		}
 
-		// Counters bump only on the user's first link (no prior rows).
-		// Switch-flow doesn't re-bump the link's registrations.
+		// Counters bump only on first-ever link (switch-flow doesn't re-bump).
 		var historyCount int64
 		tx.Model(&database.Referral{}).Where("referred_user_id = ?", userID).Count(&historyCount)
-		isFirstLink := historyCount == 1 // only the row we just inserted
-
-		if isFirstLink {
+		if historyCount == 1 {
 			tx.Model(&link).UpdateColumn("registrations", gorm.Expr("registrations + 1"))
 			tx.Model(&database.Partner{}).Where("id = ?", link.PartnerID).
 				UpdateColumn("total_referrals", gorm.Expr("total_referrals + 1"))
-
-			today := now.Format("2006-01-02")
-			// Raw INSERT bypasses GORM's auto timestamps; set created_at /
-			// updated_at explicitly so the NOT NULL columns are satisfied
-			// on the first hit, and refreshed on conflict.
-			tx.Exec(
-				`INSERT INTO partner_daily_stats (id, created_at, updated_at, partner_id, date, signups)
-				 VALUES (gen_random_uuid(), ?, ?, ?, ?, 1)
-				 ON CONFLICT (partner_id, date)
-				 DO UPDATE SET signups = partner_daily_stats.signups + 1,
-				               updated_at = EXCLUDED.updated_at`,
-				now, now, link.PartnerID, today,
-			)
 		}
 
 		return nil
@@ -313,21 +297,5 @@ func (s *ReferralService) ProcessUserDeposited(params structs.UserDepositedParam
 		updates["status"] = database.ReferralStatusDeposited
 	}
 
-	return s.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&referral).Updates(updates).Error; err != nil {
-			return err
-		}
-
-		// Daily stats for the partner — symmetric with the signups /
-		// clicks / commissions counters.
-		today := now.Format("2006-01-02")
-		return tx.Exec(
-			`INSERT INTO partner_daily_stats (id, created_at, updated_at, partner_id, date, deposits)
-			 VALUES (gen_random_uuid(), ?, ?, ?, ?, 1)
-			 ON CONFLICT (partner_id, date)
-			 DO UPDATE SET deposits = partner_daily_stats.deposits + 1,
-			               updated_at = EXCLUDED.updated_at`,
-			now, now, referral.PartnerID, today,
-		).Error
-	})
+	return s.DB.Model(&referral).Updates(updates).Error
 }

@@ -3,7 +3,6 @@ package partner
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"xmeta-partner/database"
 	"xmeta-partner/services"
@@ -216,19 +215,6 @@ func (s *AuthService) TrackClick(code string, ipAddress string, userAgent string
 	}
 
 	s.DB.Model(&link).UpdateColumn("clicks", s.DB.Raw("clicks + 1"))
-
-	now := time.Now()
-	today := now.Format("2006-01-02")
-	// Raw INSERT bypasses GORM auto timestamps; populate created_at /
-	// updated_at explicitly so the NOT NULL constraints stay happy.
-	s.DB.Exec(
-		`INSERT INTO partner_daily_stats (id, created_at, updated_at, partner_id, date, clicks)
-		 VALUES (gen_random_uuid(), ?, ?, ?, ?, 1)
-		 ON CONFLICT (partner_id, date)
-		 DO UPDATE SET clicks = partner_daily_stats.clicks + 1,
-		               updated_at = EXCLUDED.updated_at`,
-		now, now, link.PartnerID, today,
-	)
 
 	return map[string]interface{}{
 		"url":  link.URL,

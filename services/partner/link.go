@@ -3,6 +3,7 @@ package partner
 import (
 	"fmt"
 
+	"xmeta-partner/constants"
 	"xmeta-partner/controllers/common"
 	"xmeta-partner/database"
 	"xmeta-partner/services"
@@ -30,11 +31,8 @@ func (s *LinkService) List(partnerID string, params structs.ReferralListParams) 
 		return structs.PaginationResponse{}, err
 	}
 
-	// Override stored `registrations` with a live count of currently
-	// linked referrals (ended_at IS NULL). The column is bumped only on
-	// the user's first-ever signup and never decremented on unlink, so
-	// the stored value drifts. Recomputing keeps the partner-portal
-	// per-link signup count honest.
+	// Stored `registrations` drifts (bumped on first signup, never decremented on unlink).
+	// Recompute live so per-link signup counts stay honest.
 	for i := range links {
 		var live int64
 		s.DB.Model(&database.Referral{}).
@@ -46,13 +44,8 @@ func (s *LinkService) List(partnerID string, params structs.ReferralListParams) 
 	return structs.PaginationResponse{Total: total, Items: links}, nil
 }
 
-// MaxReferralLinksPerPartner caps how many links a partner can have. The
-// approve flow creates one default link, leaving room for two custom ones.
-const MaxReferralLinksPerPartner = 3
-
-// codeTaken reports whether `code` is already used by any referral link or
-// any partner's primary referral code — both columns share the same code
-// namespace and both have UNIQUE indexes.
+// codeTaken reports whether `code` is taken in either the referral_links or
+// partners.referral_code namespace — both share the same code namespace.
 func (s *LinkService) codeTaken(code string) (bool, error) {
 	var linkCount int64
 	if err := s.DB.Model(&database.ReferralLink{}).Where("code = ?", code).Count(&linkCount).Error; err != nil {
@@ -74,8 +67,8 @@ func (s *LinkService) Create(partnerID string, params structs.ReferralLinkCreate
 	if err := s.DB.Model(&database.ReferralLink{}).Where("partner_id = ?", partnerID).Count(&count).Error; err != nil {
 		return database.ReferralLink{}, err
 	}
-	if count >= MaxReferralLinksPerPartner {
-		return database.ReferralLink{}, fmt.Errorf("maximum %d referral links per partner", MaxReferralLinksPerPartner)
+	if count >= constants.MaxReferralLinksPerPartner {
+		return database.ReferralLink{}, fmt.Errorf("maximum %d referral links per partner", constants.MaxReferralLinksPerPartner)
 	}
 
 	var code string
@@ -83,9 +76,6 @@ func (s *LinkService) Create(partnerID string, params structs.ReferralLinkCreate
 		if err := utils.ValidateReferralCode(params.Code); err != nil {
 			return database.ReferralLink{}, err
 		}
-		// Custom codes need an explicit uniqueness check so we can return a
-		// clean "already in use" message rather than letting the DB unique
-		// constraint surface a raw 23505 error to the partner.
 		if taken, err := s.codeTaken(params.Code); err != nil {
 			return database.ReferralLink{}, err
 		} else if taken {
@@ -93,9 +83,6 @@ func (s *LinkService) Create(partnerID string, params structs.ReferralLinkCreate
 		}
 		code = params.Code
 	} else {
-		// Auto-generated codes have a 1-in-78B collision chance; retry up
-		// to 5 times against the live `referral_links.code` index before
-		// giving up so the approve/create flow is resilient.
 		for attempt := 0; attempt < 5; attempt++ {
 			generated, err := utils.GenerateReferralCode()
 			if err != nil {
@@ -134,7 +121,5 @@ func (s *LinkService) Create(partnerID string, params structs.ReferralLinkCreate
 	return link, nil
 }
 
-// Referral links are intentionally permanent — once a partner shares a code
-// with their audience, edits/deletes risk breaking inbound referrals and
-// muddying audit trails. No Update/Delete service method exposed; admins
-// can soft-disable a row in the database (`is_active = false`) if needed.
+// Referral links are intentionally permanent — no Update/Delete exposed.
+// Admins can soft-disable a row via `is_active = false` if needed.
