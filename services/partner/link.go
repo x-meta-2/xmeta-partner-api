@@ -30,6 +30,19 @@ func (s *LinkService) List(partnerID string, params structs.ReferralListParams) 
 		return structs.PaginationResponse{}, err
 	}
 
+	// Override stored `registrations` with a live count of currently
+	// linked referrals (ended_at IS NULL). The column is bumped only on
+	// the user's first-ever signup and never decremented on unlink, so
+	// the stored value drifts. Recomputing keeps the partner-portal
+	// per-link signup count honest.
+	for i := range links {
+		var live int64
+		s.DB.Model(&database.Referral{}).
+			Where("referral_link_id = ? AND ended_at IS NULL", links[i].ID).
+			Count(&live)
+		links[i].Registrations = int(live)
+	}
+
 	return structs.PaginationResponse{Total: total, Items: links}, nil
 }
 

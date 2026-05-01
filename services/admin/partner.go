@@ -64,11 +64,21 @@ func (s *PartnerService) Detail(id string) (map[string]interface{}, error) {
 
 	// All referral links the partner has created (primary code + custom
 	// codes from the partner-portal). The list is small (max 5) so we
-	// return all rows.
+	// return all rows. Override the stored `registrations` counter with
+	// a live count of *currently linked* referrals — the column is
+	// bumped only on a user's first-ever signup and never decremented
+	// when they unlink, so it drifts away from the truth quickly.
 	var referralLinks []database.ReferralLink
 	s.DB.Where("partner_id = ?", id).
 		Order("created_at asc").
 		Find(&referralLinks)
+	for i := range referralLinks {
+		var live int64
+		s.DB.Model(&database.Referral{}).
+			Where("referral_link_id = ? AND ended_at IS NULL", referralLinks[i].ID).
+			Count(&live)
+		referralLinks[i].Registrations = int(live)
+	}
 
 	var totalVolume float64
 	s.DB.Model(&database.Commission{}).
