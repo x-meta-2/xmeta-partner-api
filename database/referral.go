@@ -42,6 +42,10 @@ type (
 		ReferredUserID string         `gorm:"column:referred_user_id;not null;index" json:"referredUserId"`
 		ReferredUser   *User          `gorm:"foreignKey:ReferredUserID" json:"referredUser"`
 		ReferralLinkID *string        `gorm:"column:referral_link_id;index" json:"referralLinkId"`
+		// Preloaded by admin endpoints so the UI can show which exact code
+		// (primary vs custom) the user signed up through, instead of
+		// always falling back to the partner's primary referral_code.
+		ReferralLink   *ReferralLink  `gorm:"foreignKey:ReferralLinkID;references:ID" json:"referralLink"`
 		Status         ReferralStatus `gorm:"column:status;not null;default:registered" json:"status"`
 		StartedAt      time.Time      `gorm:"column:started_at;not null" json:"startedAt"`
 		EndedAt        *time.Time     `gorm:"column:ended_at;index" json:"endedAt"`

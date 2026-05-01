@@ -26,6 +26,7 @@ func (s *ReferralService) List(params structs.AdminReferralListParams) (structs.
 
 	orm := s.DB.Model(&database.Referral{}).
 		Preload("ReferredUser").
+		Preload("ReferralLink").
 		Preload("Partner.User").
 		Preload("Partner.Tier")
 
@@ -63,6 +64,7 @@ func (s *ReferralService) Detail(id string) (map[string]interface{}, error) {
 	var referral database.Referral
 	if err := s.DB.
 		Preload("ReferredUser").
+		Preload("ReferralLink").
 		Preload("Partner.User").
 		Preload("Partner.Tier").
 		Where("id = ?", id).
