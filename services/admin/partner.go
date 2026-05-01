@@ -62,6 +62,14 @@ func (s *PartnerService) Detail(id string) (map[string]interface{}, error) {
 		Limit(10).
 		Find(&recentCommissions)
 
+	// All referral links the partner has created (primary code + custom
+	// codes from the partner-portal). The list is small (max 5) so we
+	// return all rows.
+	var referralLinks []database.ReferralLink
+	s.DB.Where("partner_id = ?", id).
+		Order("created_at asc").
+		Find(&referralLinks)
+
 	var totalVolume float64
 	s.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", id).
@@ -78,6 +86,7 @@ func (s *PartnerService) Detail(id string) (map[string]interface{}, error) {
 		"partner":            partner,
 		"recentReferrals":    recentReferrals,
 		"recentCommissions":  recentCommissions,
+		"referralLinks":      referralLinks,
 		"totalVolume":        totalVolume,
 		"pendingCommissions": pendingCommissions,
 	}, nil
