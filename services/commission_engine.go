@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"xmeta-partner/database"
@@ -98,16 +97,6 @@ func (s *CommissionEngineService) ProcessTradeEvent(params structs.TradeEventPar
 			return err
 		}
 
-		// Handle sub-affiliate override commission. We don't want a parent-
-		// chain failure to roll back the (already-correct) child trade
-		// commission, but silently swallowing the error loses observability.
-		if partner.ParentID != nil {
-			if err := s.processOverrideCommission(tx, *partner.ParentID, params, commission); err != nil {
-				log.Printf("[commission] override failed for parent=%s child=%s trade=%s: %v",
-					*partner.ParentID, partner.ID, params.TradeID, err)
-			}
-		}
-
 		// First-trade transition: mark referral active so dashboards/stats
 		// reflect the user as an "active client".
 		if referral.FirstTradeAt == nil {
@@ -123,59 +112,3 @@ func (s *CommissionEngineService) ProcessTradeEvent(params structs.TradeEventPar
 	})
 }
 
-// processOverrideCommission creates override commission for parent partner within a transaction
-func (s *CommissionEngineService) processOverrideCommission(tx *gorm.DB, parentID string, params structs.TradeEventParams, childCommission database.Commission) error {
-	// Verify parent partner is active
-	var parentPartner database.Partner
-	if err := tx.Where("id = ? AND status = ?", parentID, "active").First(&parentPartner).Error; err != nil {
-		return nil // Parent not active, skip
-	}
-
-	// Get the sub-affiliate invite to find override rate
-	var invite database.SubAffiliateInvite
-	if err := tx.Where("sub_partner_id = ? AND status = ?", childCommission.PartnerID, "accepted").
-		First(&invite).Error; err != nil {
-		return nil // No accepted invite found, skip
-	}
-
-	overrideAmount := childCommission.CommissionAmount * invite.OverrideRate
-
-	override := database.Commission{
-		PartnerID:         parentID,
-		ReferredUserID:    params.UserID,
-		TradeID:           params.TradeID,
-		TradeAmount:       params.TradeAmount,
-		CommissionRate:    invite.OverrideRate,
-		CommissionAmount:  overrideAmount,
-		IsOverride:        true,
-		OverridePartnerID: &childCommission.PartnerID,
-		Status:            "pending",
-		TradeDate:         childCommission.TradeDate,
-	}
-
-	if err := tx.Create(&override).Error; err != nil {
-		return err
-	}
-
-	// Atomically update parent total earnings
-	if err := tx.Model(&database.Partner{}).Where("id = ?", parentID).
-		UpdateColumn("total_earnings", gorm.Expr("total_earnings + ?", overrideAmount)).Error; err != nil {
-		return err
-	}
-
-	// Upsert parent daily stats. Mirror the child's columns (trade_volume +
-	// commissions) so the parent dashboard shows the same totals that drove
-	// their override earnings.
-	today := childCommission.TradeDate.Format("2006-01-02")
-	now := time.Now()
-	return tx.Exec(
-		`INSERT INTO partner_daily_stats (id, created_at, updated_at, partner_id, date, trade_volume, commissions)
-		 VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?)
-		 ON CONFLICT (partner_id, date)
-		 DO UPDATE SET trade_volume = partner_daily_stats.trade_volume + EXCLUDED.trade_volume,
-		               commissions = partner_daily_stats.commissions + EXCLUDED.commissions,
-		               updated_at = EXCLUDED.updated_at`,
-		now, now,
-		parentID, today, params.TradeAmount, overrideAmount,
-	).Error
-}

@@ -28,8 +28,6 @@ type Partner struct {
 	Tier           *PartnerTier           `gorm:"foreignKey:TierID" json:"tier"`
 	Status         PartnerStatus          `gorm:"column:status;not null;default:pending;index" json:"status"`
 	ReferralCode   string                 `gorm:"column:referral_code;not null;uniqueIndex" json:"referralCode"`
-	ParentID       *string                `gorm:"column:parent_id;index" json:"parentId"`
-	Parent         *Partner               `gorm:"foreignKey:ParentID" json:"parent"`
 	TotalReferrals int                    `gorm:"column:total_referrals;default:0" json:"totalReferrals"`
 	TotalEarnings  float64                `gorm:"column:total_earnings;type:decimal(20,8);default:0" json:"totalEarnings"`
 	CompanyName    string                 `gorm:"column:company_name" json:"companyName"`

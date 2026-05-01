@@ -32,25 +32,18 @@ func (s *CommissionService) List(partnerID string, params structs.CommissionList
 	return structs.PaginationResponse{Total: total, Items: commissions}, nil
 }
 
-// Breakdown returns commission totals split by direct vs sub-affiliate
-// override earnings. Futures is the only trade type, so there is no
-// per-product split.
+// Breakdown returns the partner's total commission earnings within an
+// optional date window. Futures is the only trade type today, so there is
+// no per-product split — the field is kept as a single total.
 type CommissionBreakdown struct {
-	Futures  float64 `json:"futures"`
-	Override float64 `json:"override"`
-	Total    float64 `json:"total"`
+	Futures float64 `json:"futures"`
+	Total   float64 `json:"total"`
 }
 
 func (s *CommissionService) Breakdown(partnerID string, params structs.CommissionBreakdownParams) (CommissionBreakdown, error) {
-	type row struct {
-		IsOverride bool
-		Sum        float64
-	}
-
 	orm := s.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", partnerID).
-		Select("is_override, COALESCE(SUM(commission_amount), 0) AS sum").
-		Group("is_override")
+		Select("COALESCE(SUM(commission_amount), 0) AS sum")
 
 	if params.StartDate != nil {
 		orm = orm.Where("trade_date >= ?", params.StartDate)
@@ -59,21 +52,12 @@ func (s *CommissionService) Breakdown(partnerID string, params structs.Commissio
 		orm = orm.Where("trade_date <= ?", params.EndDate)
 	}
 
-	var rows []row
-	if err := orm.Find(&rows).Error; err != nil {
+	var sum float64
+	if err := orm.Scan(&sum).Error; err != nil {
 		return CommissionBreakdown{}, err
 	}
 
-	var result CommissionBreakdown
-	for _, r := range rows {
-		if r.IsOverride {
-			result.Override = r.Sum
-		} else {
-			result.Futures = r.Sum
-		}
-	}
-	result.Total = result.Futures + result.Override
-	return result, nil
+	return CommissionBreakdown{Futures: sum, Total: sum}, nil
 }
 
 func (s *CommissionService) DailySummary(partnerID string, params structs.ChartParams) (interface{}, error) {

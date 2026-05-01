@@ -35,7 +35,6 @@ func Register(router *gin.RouterGroup) {
 	partner.LinkController{Controller: bc}.Register(partnerGroup.Group("links"))
 	partner.CommissionController{Controller: bc}.Register(partnerGroup.Group("commissions"))
 	partner.PayoutController{Controller: bc}.Register(partnerGroup.Group("payouts"))
-	partner.SubAffiliateController{Controller: bc}.Register(partnerGroup.Group("sub-affiliates"))
 
 	// Admin routes (admin Cognito auth + RBAC)
 	adminGroup := router.Group("admin/partner")

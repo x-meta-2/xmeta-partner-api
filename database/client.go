@@ -48,9 +48,6 @@ func Connect() *gorm.DB {
 			&Payout{},
 			&PayoutItem{},
 
-			// Sub-Affiliates
-			&SubAffiliateInvite{},
-
 			// NOTE: admin_permissions, admin_groups, admin_group_permissions,
 			// admin_users tables are managed by xmeta-admin-api (shared DB).
 			// Do NOT auto-migrate them here.

@@ -23,6 +23,7 @@ func RunMigrations(db *gorm.DB) {
 	// ── Active migrations ──────────────────────────────────────────────
 	migrateReferralsToTimeBound(db)    // 2026-04-29 — switchable referrals
 	dropDeadReferralColumns(db)        // 2026-04-29 — utm + bonus + ip/ua were never wired
+	dropSubAffiliateArtifacts(db)      // 2026-04-30 — full sub-affiliate removal
 
 	// ── Completed (kept commented as a changelog) ──────────────────────
 	// migrateReferralsToTimeBound(db) // 2026-04-29
@@ -88,6 +89,23 @@ func migrateReferralsToTimeBound(db *gorm.DB) {
 	}
 
 	log.Println("✓ referrals table is now time-bound")
+}
+
+// dropSubAffiliateArtifacts removes every DB artifact left over from the
+// (now-removed) 2-tier affiliate feature:
+//
+//   - sub_affiliate_invites table (whole feature was never wired up)
+//   - partners.parent_id      — was meant to chain partners; nothing read it
+//   - commissions.is_override — override row marker; no overrides ever ran
+//   - commissions.override_partner_id — same
+//
+// Idempotent — uses `DROP TABLE/COLUMN IF EXISTS` so re-runs are no-ops.
+func dropSubAffiliateArtifacts(db *gorm.DB) {
+	log.Println("→ dropSubAffiliateArtifacts")
+	dropTable(db, "sub_affiliate_invites")
+	dropColumn(db, "partners", "parent_id")
+	dropColumn(db, "commissions", "is_override")
+	dropColumn(db, "commissions", "override_partner_id")
 }
 
 // dropDeadReferralColumns removes the audit/bonus columns that the live
