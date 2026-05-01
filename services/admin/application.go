@@ -22,7 +22,9 @@ func (s *ApplicationService) List(params structs.ApplicationListParams) (structs
 	pInput := services.PreparePaginationInput(params.PaginationInput)
 	params.PaginationInput = pInput
 
-	orm := s.DB.Model(&database.PartnerApplication{}).Preload("User")
+	orm := s.DB.Model(&database.PartnerApplication{}).
+		Preload("User").
+		Preload("Reviewer")
 	orm = common.Equal(orm, "status", params.Status)
 
 	if params.Query != "" {
@@ -50,7 +52,11 @@ func (s *ApplicationService) List(params structs.ApplicationListParams) (structs
 
 func (s *ApplicationService) Detail(id string) (database.PartnerApplication, error) {
 	var app database.PartnerApplication
-	if err := s.DB.Where("id = ?", id).First(&app).Error; err != nil {
+	if err := s.DB.
+		Preload("User").
+		Preload("Reviewer").
+		Where("id = ?", id).
+		First(&app).Error; err != nil {
 		return database.PartnerApplication{}, err
 	}
 	return app, nil

@@ -3168,6 +3168,81 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "database.AdminGroup": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.AdminPermission"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.AdminPermission": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.AdminUser": {
+            "type": "object",
+            "properties": {
+                "adminGroup": {
+                    "$ref": "#/definitions/database.AdminGroup"
+                },
+                "adminGroupId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "department": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isEnabled": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "database.ApplicationStatus": {
             "type": "string",
             "enum": [
@@ -3260,6 +3335,14 @@ const docTemplate = `{
                 },
                 "reviewedBy": {
                     "type": "string"
+                },
+                "reviewer": {
+                    "description": "Reviewer mirrors ReviewedBy as the actual admin row, preloaded by\nthe admin endpoints so the UI can show \"approved by {email}\" without\na second round-trip. admin_users is owned by xmeta-admin-api; here\nwe just JOIN through ReviewedBy.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/database.AdminUser"
+                        }
+                    ]
                 },
                 "socialMedia": {
                     "type": "object",

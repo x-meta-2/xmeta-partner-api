@@ -1,5 +1,54 @@
 basePath: /api/v1
 definitions:
+  database.AdminGroup:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/database.AdminPermission'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  database.AdminPermission:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.AdminUser:
+    properties:
+      adminGroup:
+        $ref: '#/definitions/database.AdminGroup'
+      adminGroupId:
+        type: string
+      createdAt:
+        type: string
+      department:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      isEnabled:
+        type: boolean
+      status:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   database.ApplicationStatus:
     enum:
     - pending
@@ -72,6 +121,14 @@ definitions:
         type: string
       reviewedBy:
         type: string
+      reviewer:
+        allOf:
+        - $ref: '#/definitions/database.AdminUser'
+        description: |-
+          Reviewer mirrors ReviewedBy as the actual admin row, preloaded by
+          the admin endpoints so the UI can show "approved by {email}" without
+          a second round-trip. admin_users is owned by xmeta-admin-api; here
+          we just JOIN through ReviewedBy.
       socialMedia:
         additionalProperties: true
         type: object
