@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"xmeta-partner/database"
-	"xmeta-partner/services"
+	internalPayout "xmeta-partner/internal/payout"
 	"xmeta-partner/utils"
 )
 
@@ -15,11 +15,9 @@ func main() {
 	utils.LoadConfig()
 	db := database.Connect()
 
-	worker := services.PayoutWorkerService{
-		BaseService: services.BaseService{DB: db},
-	}
+	svc := internalPayout.NewService(db)
 
-	if err := worker.ProcessDailyPayouts(); err != nil {
+	if err := svc.Commands.ProcessDailyPayouts.Handle(); err != nil {
 		log.Printf("[PayoutWorker] Error: %v", err)
 		os.Exit(1)
 	}

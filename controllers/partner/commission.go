@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalCommission "xmeta-partner/internal/commission"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// CommissionController handles commission data
 type CommissionController struct {
 	common.Controller
-	Service *partnersvc.CommissionService
+	Service *internalCommission.Service
 }
 
 func (co CommissionController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.CommissionService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalCommission.NewService(co.DB)
 	r := router.Use(middlewares.PartnerAuth(co.DB))
 	{
 		r.POST("/list", co.List)
@@ -58,7 +54,7 @@ func (co CommissionController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(partner.ID, params)
+	result, err := co.Service.Queries.ListCommissions.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -95,7 +91,7 @@ func (co CommissionController) Breakdown(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Breakdown(partner.ID, params)
+	result, err := co.Service.Queries.CommissionBreakdown.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -132,7 +128,7 @@ func (co CommissionController) DailySummary(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.DailySummary(partner.ID, params)
+	result, err := co.Service.Queries.DailySummary.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

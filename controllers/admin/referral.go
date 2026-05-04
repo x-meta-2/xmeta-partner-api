@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalReferral "xmeta-partner/internal/referral"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ReferralController exposes admin views over the partner-referral graph.
 type ReferralController struct {
 	common.Controller
-	Service *adminsvc.ReferralService
+	Service *internalReferral.Service
 }
 
 func (co ReferralController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.ReferralService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalReferral.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.POST("/list", co.List)
@@ -51,7 +47,7 @@ func (co ReferralController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(params)
+	result, err := co.Service.Queries.AdminListReferrals.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -82,7 +78,7 @@ func (co ReferralController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(id)
+	result, err := co.Service.Queries.AdminReferralDetail.Handle(id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

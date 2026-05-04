@@ -12,7 +12,6 @@ type ReferralStatus string
 
 const (
 	ReferralStatusRegistered ReferralStatus = "registered"
-	ReferralStatusDeposited  ReferralStatus = "deposited"
 	ReferralStatusActive     ReferralStatus = "active"
 	ReferralStatusInactive   ReferralStatus = "inactive"
 	ReferralStatusUnlinked   ReferralStatus = "unlinked"
@@ -50,7 +49,6 @@ type (
 		StartedAt      time.Time      `gorm:"column:started_at;not null" json:"startedAt"`
 		EndedAt        *time.Time     `gorm:"column:ended_at;index" json:"endedAt"`
 		RegisteredAt   time.Time      `gorm:"column:registered_at;not null" json:"registeredAt"`
-		FirstDepositAt *time.Time     `gorm:"column:first_deposit_at" json:"firstDepositAt"`
-		FirstTradeAt   *time.Time     `gorm:"column:first_trade_at" json:"firstTradeAt"`
+		FirstTradeAt *time.Time `gorm:"column:first_trade_at" json:"firstTradeAt"`
 	}
 )

@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalPartner "xmeta-partner/internal/partner"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// PartnerController handles admin partner management
 type PartnerController struct {
 	common.Controller
-	Service *adminsvc.PartnerService
+	Service *internalPartner.Service
 }
 
 func (co PartnerController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.PartnerService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalPartner.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.POST("/list", co.List)
@@ -53,7 +49,7 @@ func (co PartnerController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(params)
+	result, err := co.Service.Queries.ListPartners.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -84,7 +80,7 @@ func (co PartnerController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(id)
+	result, err := co.Service.Queries.GetPartnerDetail.Handle(id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -124,7 +120,7 @@ func (co PartnerController) UpdateTier(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.UpdateTier(id, params.TierID)
+	result, err := co.Service.Commands.UpdatePartnerTier.Handle(id, params.TierID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -164,7 +160,7 @@ func (co PartnerController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.UpdateStatus(id, params.Status)
+	result, err := co.Service.Commands.UpdatePartnerStatus.Handle(id, params.Status)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

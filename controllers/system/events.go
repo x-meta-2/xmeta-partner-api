@@ -4,28 +4,23 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalCommission "xmeta-partner/internal/commission"
+	internalReferral "xmeta-partner/internal/referral"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// EventsController handles internal API calls from monorepo
 type EventsController struct {
 	common.Controller
-	CommissionService *services.CommissionEngineService
-	ReferralService   *partnersvc.ReferralService
+	CommissionService *internalCommission.Service
+	ReferralService   *internalReferral.Service
 }
 
 func (co EventsController) Register(router *gin.RouterGroup) {
-	co.CommissionService = &services.CommissionEngineService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
-	co.ReferralService = &partnersvc.ReferralService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.CommissionService = internalCommission.NewService(co.DB)
+	co.ReferralService = internalReferral.NewService(co.DB)
 
 	r := router.Use(middlewares.InternalAuth())
 	{
@@ -33,7 +28,6 @@ func (co EventsController) Register(router *gin.RouterGroup) {
 		r.GET("/referral-links/:code", co.LookupReferralLink)
 		r.POST("/link-referral", co.LinkReferral)
 		r.POST("/unlink-referral", co.UnlinkReferral)
-		r.POST("/user-deposited", co.UserDeposited)
 	}
 }
 
@@ -59,7 +53,7 @@ func (co EventsController) TradeEvent(c *gin.Context) {
 		return
 	}
 
-	err := co.CommissionService.ProcessTradeEvent(params)
+	err := co.CommissionService.Commands.ProcessTradeEvent.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -89,7 +83,7 @@ func (co EventsController) LookupReferralLink(c *gin.Context) {
 		return
 	}
 
-	result, err := co.ReferralService.LookupReferralLink(code)
+	result, err := co.ReferralService.Queries.LookupLink.Handle(code)
 	if err != nil {
 		co.SetError(c, http.StatusNotFound, err.Error())
 		return
@@ -120,7 +114,7 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 		return
 	}
 
-	err := co.ReferralService.ProcessUserRegistered(params)
+	err := co.ReferralService.Commands.LinkReferral.Handle(params.UserID, params.ReferralCode)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -151,7 +145,7 @@ func (co EventsController) UnlinkReferral(c *gin.Context) {
 		return
 	}
 
-	if err := co.ReferralService.UnlinkReferral(params.UserID); err != nil {
+	if err := co.ReferralService.Commands.UnlinkReferral.Handle(params.UserID); err != nil {
 		co.SetError(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -159,33 +153,3 @@ func (co EventsController) UnlinkReferral(c *gin.Context) {
 	co.SetBody(c, structs.SuccessResponse{Success: true})
 }
 
-// UserDeposited
-// @Summary       Process user deposit
-// @Description   Records a referred user deposit and runs deposit-based commission rules
-// @Tags          System Events
-// @Accept        json
-// @Produce       json
-// @Param         request body structs.UserDepositedParams true "User deposit payload"
-// @Success       200 {object} structs.ResponseBody{body=structs.SuccessResponse}
-// @Failure       400 {object} structs.ErrorResponse
-// @Failure       401 {object} structs.ErrorResponse
-// @Failure       500 {object} structs.ErrorResponse
-// @Security      InternalKey
-// @Router        /internal/user-deposited [post]
-func (co EventsController) UserDeposited(c *gin.Context) {
-	defer func() { c.JSON(co.GetBody(c)) }()
-
-	var params structs.UserDepositedParams
-	if err := c.ShouldBindJSON(&params); err != nil {
-		co.SetError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	err := co.ReferralService.ProcessUserDeposited(params)
-	if err != nil {
-		co.SetError(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	co.SetBody(c, structs.SuccessResponse{Success: true})
-}

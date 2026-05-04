@@ -5,8 +5,7 @@ import (
 
 	"xmeta-partner/controllers/common"
 	"xmeta-partner/database"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
+	internalAuth "xmeta-partner/internal/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,13 +14,11 @@ import (
 // Used by the marketing landing page (tier table) and referral link clicks.
 type Controller struct {
 	common.Controller
-	Service *partnersvc.AuthService
+	Service *internalAuth.Service
 }
 
 func (co Controller) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.AuthService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalAuth.NewService(co.DB)
 	router.GET("/ref/:code", co.TrackClick)
 	router.GET("/tiers", co.ListTiers)
 }

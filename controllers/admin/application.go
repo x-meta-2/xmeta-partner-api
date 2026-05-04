@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalPartner "xmeta-partner/internal/partner"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ApplicationController handles partner application review
 type ApplicationController struct {
 	common.Controller
-	Service *adminsvc.ApplicationService
+	Service *internalPartner.Service
 }
 
 func (co ApplicationController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.ApplicationService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalPartner.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.POST("/list", co.List)
@@ -53,7 +49,7 @@ func (co ApplicationController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(params)
+	result, err := co.Service.Queries.ListApplications.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -84,7 +80,7 @@ func (co ApplicationController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(id)
+	result, err := co.Service.Queries.GetApplication.Handle(id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -121,7 +117,7 @@ func (co ApplicationController) Approve(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Approve(id, admin.ID)
+	result, err := co.Service.Commands.ApproveApplication.Handle(id, admin.ID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -165,7 +161,7 @@ func (co ApplicationController) Reject(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Reject(id, admin.ID, params)
+	result, err := co.Service.Commands.RejectApplication.Handle(id, admin.ID, params.RejectionReason)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

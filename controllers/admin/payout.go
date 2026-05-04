@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalPayout "xmeta-partner/internal/payout"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// PayoutController handles admin payout management
 type PayoutController struct {
 	common.Controller
-	Service *adminsvc.PayoutService
+	Service *internalPayout.Service
 }
 
 func (co PayoutController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.PayoutService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalPayout.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.POST("/list", co.List)
@@ -54,7 +50,7 @@ func (co PayoutController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(params)
+	result, err := co.Service.Queries.AdminListPayouts.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -85,7 +81,7 @@ func (co PayoutController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(id)
+	result, err := co.Service.Queries.AdminPayoutDetail.Handle(id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -116,7 +112,10 @@ func (co PayoutController) PendingList(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.PendingList(params)
+	pending := "pending"
+	params.Status = &pending
+
+	result, err := co.Service.Queries.AdminListPayouts.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -153,7 +152,7 @@ func (co PayoutController) Approve(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Approve(id, admin.ID)
+	result, err := co.Service.Commands.ApprovePayout.Handle(id, admin.ID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -197,7 +196,7 @@ func (co PayoutController) Reject(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Reject(id, admin.ID, params)
+	result, err := co.Service.Commands.RejectPayout.Handle(id, admin.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

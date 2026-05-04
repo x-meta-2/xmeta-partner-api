@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalReferral "xmeta-partner/internal/referral"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// LinkController handles referral link management
 type LinkController struct {
 	common.Controller
-	Service *partnersvc.LinkService
+	Service *internalReferral.Service
 }
 
 func (co LinkController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.LinkService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalReferral.NewService(co.DB)
 	r := router.Use(middlewares.PartnerAuth(co.DB))
 	{
 		r.POST("/list", co.List)
@@ -57,7 +53,7 @@ func (co LinkController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(partner.ID, params)
+	result, err := co.Service.Queries.ListLinks.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -94,7 +90,7 @@ func (co LinkController) Create(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Create(partner.ID, params)
+	result, err := co.Service.Commands.CreateLink.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

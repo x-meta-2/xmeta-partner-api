@@ -4,24 +4,23 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalAnalytics "xmeta-partner/internal/analytics"
+	internalAuth "xmeta-partner/internal/auth"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// DashboardController handles partner dashboard data
 type DashboardController struct {
 	common.Controller
-	Service *partnersvc.DashboardService
+	AnalyticsService *internalAnalytics.Service
+	AuthService      *internalAuth.Service
 }
 
 func (co DashboardController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.DashboardService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.AnalyticsService = internalAnalytics.NewService(co.DB)
+	co.AuthService = internalAuth.NewService(co.DB)
 	r := router.Use(middlewares.PartnerAuth(co.DB))
 	{
 		r.POST("/summary", co.Summary)
@@ -59,7 +58,7 @@ func (co DashboardController) Summary(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.GetSummary(partner.ID, params)
+	result, err := co.AnalyticsService.Queries.DashboardSummary.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -96,7 +95,7 @@ func (co DashboardController) EarningsChart(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.GetEarningsChart(partner.ID, params)
+	result, err := co.AnalyticsService.Queries.EarningsChart.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -133,7 +132,7 @@ func (co DashboardController) ReferralChart(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.GetReferralChart(partner.ID, params)
+	result, err := co.AnalyticsService.Queries.ReferralChart.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -162,7 +161,7 @@ func (co DashboardController) TierProgress(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.GetTierProgress(partner.ID)
+	result, err := co.AuthService.GetTierDetails(partner.ID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalPayout "xmeta-partner/internal/payout"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// PayoutController handles partner payout data
 type PayoutController struct {
 	common.Controller
-	Service *partnersvc.PayoutService
+	Service *internalPayout.Service
 }
 
 func (co PayoutController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.PayoutService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalPayout.NewService(co.DB)
 	r := router.Use(middlewares.PartnerAuth(co.DB))
 	{
 		r.POST("/list", co.List)
@@ -58,7 +54,7 @@ func (co PayoutController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(partner.ID, params)
+	result, err := co.Service.Queries.ListPayouts.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -95,7 +91,7 @@ func (co PayoutController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(partner.ID, id)
+	result, err := co.Service.Queries.PayoutDetail.Handle(partner.ID, id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -124,7 +120,7 @@ func (co PayoutController) Pending(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Pending(partner.ID)
+	result, err := co.Service.Queries.PendingCommissions.Handle(partner.ID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalPartner "xmeta-partner/internal/partner"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ConfigController handles tier and commission config management
 type ConfigController struct {
 	common.Controller
-	Service *adminsvc.ConfigService
+	Service *internalPartner.Service
 }
 
 func (co ConfigController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.ConfigService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalPartner.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.GET("/tiers", co.ListTiers)
@@ -45,7 +41,7 @@ func (co ConfigController) Register(router *gin.RouterGroup) {
 func (co ConfigController) ListTiers(c *gin.Context) {
 	defer func() { c.JSON(co.GetBody(c)) }()
 
-	result, err := co.Service.ListTiers()
+	result, err := co.Service.Queries.ListTiers.Handle()
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -76,7 +72,7 @@ func (co ConfigController) CreateTier(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.CreateTier(params)
+	result, err := co.Service.Commands.CreateTier.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -114,7 +110,7 @@ func (co ConfigController) UpdateTier(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.UpdateTier(id, params)
+	result, err := co.Service.Commands.UpdateTier.Handle(id, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -145,7 +141,7 @@ func (co ConfigController) DeleteTier(c *gin.Context) {
 		return
 	}
 
-	err := co.Service.DeleteTier(id)
+	err := co.Service.Commands.DeleteTier.Handle(id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

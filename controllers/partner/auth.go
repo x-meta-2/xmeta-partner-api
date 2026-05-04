@@ -4,9 +4,8 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalAuth "xmeta-partner/internal/auth"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
@@ -24,13 +23,11 @@ import (
 // Monorepo proxies the user action server-to-server with InternalKey.
 type AuthController struct {
 	common.Controller
-	Service *partnersvc.AuthService
+	Service *internalAuth.Service
 }
 
 func (co AuthController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.AuthService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalAuth.NewService(co.DB)
 
 	// Any authenticated xmeta user (partner эсвэл биш) хандаж болох endpoint-ууд
 	userRoutes := router.Group("").Use(middlewares.UserAuth(co.DB))

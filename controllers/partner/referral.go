@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalReferral "xmeta-partner/internal/referral"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	partnersvc "xmeta-partner/services/partner"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ReferralController handles partner referral management
 type ReferralController struct {
 	common.Controller
-	Service *partnersvc.ReferralService
+	Service *internalReferral.Service
 }
 
 func (co ReferralController) Register(router *gin.RouterGroup) {
-	co.Service = &partnersvc.ReferralService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalReferral.NewService(co.DB)
 	r := router.Use(middlewares.PartnerAuth(co.DB))
 	{
 		r.POST("/list", co.List)
@@ -58,7 +54,7 @@ func (co ReferralController) List(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.List(partner.ID, params)
+	result, err := co.Service.Queries.ListReferrals.Handle(partner.ID, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -95,7 +91,7 @@ func (co ReferralController) Detail(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Detail(partner.ID, id)
+	result, err := co.Service.Queries.ReferralDetail.Handle(partner.ID, id)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -124,7 +120,7 @@ func (co ReferralController) Stats(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Stats(partner.ID)
+	result, err := co.Service.Queries.ReferralStats.Handle(partner.ID)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

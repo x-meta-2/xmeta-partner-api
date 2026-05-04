@@ -4,24 +4,20 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
+	internalAnalytics "xmeta-partner/internal/analytics"
 	"xmeta-partner/middlewares"
-	"xmeta-partner/services"
-	adminsvc "xmeta-partner/services/admin"
 	"xmeta-partner/structs"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AnalyticsController handles admin analytics endpoints
 type AnalyticsController struct {
 	common.Controller
-	Service *adminsvc.AnalyticsService
+	Service *internalAnalytics.Service
 }
 
 func (co AnalyticsController) Register(router *gin.RouterGroup) {
-	co.Service = &adminsvc.AnalyticsService{
-		BaseService: services.BaseService{DB: co.DB},
-	}
+	co.Service = internalAnalytics.NewService(co.DB)
 	r := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partners"))
 	{
 		r.POST("/summary", co.Summary)
@@ -53,7 +49,7 @@ func (co AnalyticsController) Summary(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.Summary(params)
+	result, err := co.Service.Queries.AdminSummary.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -84,7 +80,7 @@ func (co AnalyticsController) CommissionTrend(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.CommissionTrend(params)
+	result, err := co.Service.Queries.CommissionTrend.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -115,7 +111,7 @@ func (co AnalyticsController) TopPartners(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.TopPartners(params)
+	result, err := co.Service.Queries.TopPartners.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -146,7 +142,7 @@ func (co AnalyticsController) ReferralFunnel(c *gin.Context) {
 		return
 	}
 
-	result, err := co.Service.ReferralFunnel(params)
+	result, err := co.Service.Queries.ReferralFunnel.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

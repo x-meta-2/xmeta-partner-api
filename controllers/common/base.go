@@ -220,3 +220,19 @@ func OrBetween(db *gorm.DB, field string, min interface{}, max interface{}) *gor
 	}
 	return db.Or(fmt.Sprintf("%s >= ? AND %s <= ?", field, field), min, max)
 }
+
+func PreparePaginationInput(input structs.PaginationInput) structs.PaginationInput {
+	if input.Current <= 0 && input.Page > 0 {
+		input.Current = input.Page
+	}
+	if input.Current <= 0 {
+		input.Current = 1
+	}
+	if input.PageSize <= 0 && input.Limit > 0 {
+		input.PageSize = input.Limit
+	}
+	if input.PageSize <= 0 {
+		input.PageSize = 20
+	}
+	return input
+}

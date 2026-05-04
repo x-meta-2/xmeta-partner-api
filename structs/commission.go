@@ -38,7 +38,3 @@ type UnlinkReferralEventParams struct {
 	UserID string `json:"userId" binding:"required"`
 }
 
-type UserDepositedParams struct {
-	UserID string  `json:"userId" binding:"required"`
-	Amount float64 `json:"amount" binding:"required"`
-}
