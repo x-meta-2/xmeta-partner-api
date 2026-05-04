@@ -33,7 +33,7 @@ func (co ReferralController) Register(router *gin.RouterGroup) {
 // @Accept        json
 // @Produce       json
 // @Param         request body structs.ReferralListParams true "Filters and pagination"
-// @Success       200 {object} structs.ResponseBody{body=structs.PaginationResponse{items=[]partner.ReferralListItem}}
+// @Success       200 {object} structs.ResponseBody{body=structs.PaginationResponse{items=[]dto.ReferralListItem}}
 // @Failure       400 {object} structs.ErrorResponse
 // @Failure       401 {object} structs.ErrorResponse
 // @Failure       500 {object} structs.ErrorResponse
@@ -70,7 +70,7 @@ func (co ReferralController) List(c *gin.Context) {
 // @Accept        json
 // @Produce       json
 // @Param         id path string true "Referral ID"
-// @Success       200 {object} structs.ResponseBody{body=partner.ReferralListItem}
+// @Success       200 {object} structs.ResponseBody{body=dto.ReferralListItem}
 // @Failure       400 {object} structs.ErrorResponse
 // @Failure       401 {object} structs.ErrorResponse
 // @Failure       500 {object} structs.ErrorResponse

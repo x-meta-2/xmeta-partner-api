@@ -249,14 +249,12 @@ definitions:
   database.ReferralStatus:
     enum:
     - registered
-    - deposited
     - active
     - inactive
     - unlinked
     type: string
     x-enum-varnames:
     - ReferralStatusRegistered
-    - ReferralStatusDeposited
     - ReferralStatusActive
     - ReferralStatusInactive
     - ReferralStatusUnlinked
@@ -294,7 +292,7 @@ definitions:
       vipLevel:
         type: integer
     type: object
-  partner.ReferralLinkLookup:
+  dto.ReferralLinkLookup:
     properties:
       code:
         type: string
@@ -307,13 +305,11 @@ definitions:
       partnerId:
         type: string
     type: object
-  partner.ReferralListItem:
+  dto.ReferralListItem:
     properties:
       createdAt:
         type: string
       endedAt:
-        type: string
-      firstDepositAt:
         type: string
       firstTradeAt:
         type: string
@@ -324,7 +320,7 @@ definitions:
       referralLinkId:
         type: string
       referredUser:
-        $ref: '#/definitions/partner.ReferralUserRef'
+        $ref: '#/definitions/dto.ReferralUserRef'
       referredUserId:
         type: string
       registeredAt:
@@ -334,7 +330,7 @@ definitions:
       status:
         $ref: '#/definitions/database.ReferralStatus'
     type: object
-  partner.ReferralUserRef:
+  dto.ReferralUserRef:
     properties:
       firstName:
         type: string
@@ -669,16 +665,6 @@ definitions:
       userId:
         type: string
     required:
-    - userId
-    type: object
-  structs.UserDepositedParams:
-    properties:
-      amount:
-        type: number
-      userId:
-        type: string
-    required:
-    - amount
     - userId
     type: object
   structs.UserRegisteredParams:
@@ -1699,7 +1685,7 @@ paths:
             - $ref: '#/definitions/structs.ResponseBody'
             - properties:
                 body:
-                  $ref: '#/definitions/partner.ReferralLinkLookup'
+                  $ref: '#/definitions/dto.ReferralLinkLookup'
               type: object
         "401":
           description: Unauthorized
@@ -1801,48 +1787,6 @@ paths:
       security:
       - InternalKey: []
       summary: Unlink a user from their current partner
-      tags:
-      - System Events
-  /internal/user-deposited:
-    post:
-      consumes:
-      - application/json
-      description: Records a referred user deposit and runs deposit-based commission
-        rules
-      parameters:
-      - description: User deposit payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/structs.UserDepositedParams'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/structs.ResponseBody'
-            - properties:
-                body:
-                  $ref: '#/definitions/structs.SuccessResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/structs.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/structs.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/structs.ErrorResponse'
-      security:
-      - InternalKey: []
-      summary: Process user deposit
       tags:
       - System Events
   /partner/auth/apply:
@@ -2469,7 +2413,7 @@ paths:
             - $ref: '#/definitions/structs.ResponseBody'
             - properties:
                 body:
-                  $ref: '#/definitions/partner.ReferralListItem'
+                  $ref: '#/definitions/dto.ReferralListItem'
               type: object
         "400":
           description: Bad Request
@@ -2516,7 +2460,7 @@ paths:
                   - properties:
                       items:
                         items:
-                          $ref: '#/definitions/partner.ReferralListItem'
+                          $ref: '#/definitions/dto.ReferralListItem'
                         type: array
                     type: object
               type: object

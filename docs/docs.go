@@ -1662,7 +1662,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/partner.ReferralLinkLookup"
+                                            "$ref": "#/definitions/dto.ReferralLinkLookup"
                                         }
                                     }
                                 }
@@ -1785,75 +1785,6 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/structs.UnlinkReferralEventParams"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/structs.ResponseBody"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/structs.SuccessResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/structs.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/structs.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/structs.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/internal/user-deposited": {
-            "post": {
-                "security": [
-                    {
-                        "InternalKey": []
-                    }
-                ],
-                "description": "Records a referred user deposit and runs deposit-based commission rules",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "System Events"
-                ],
-                "summary": "Process user deposit",
-                "parameters": [
-                    {
-                        "description": "User deposit payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/structs.UserDepositedParams"
                         }
                     }
                 ],
@@ -2926,7 +2857,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "body": {
-                                            "$ref": "#/definitions/partner.ReferralListItem"
+                                            "$ref": "#/definitions/dto.ReferralListItem"
                                         }
                                     }
                                 }
@@ -3005,7 +2936,7 @@ const docTemplate = `{
                                                         "items": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/partner.ReferralListItem"
+                                                                "$ref": "#/definitions/dto.ReferralListItem"
                                                             }
                                                         }
                                                     }
@@ -3520,14 +3451,12 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "registered",
-                "deposited",
                 "active",
                 "inactive",
                 "unlinked"
             ],
             "x-enum-varnames": [
                 "ReferralStatusRegistered",
-                "ReferralStatusDeposited",
                 "ReferralStatusActive",
                 "ReferralStatusInactive",
                 "ReferralStatusUnlinked"
@@ -3584,7 +3513,7 @@ const docTemplate = `{
                 }
             }
         },
-        "partner.ReferralLinkLookup": {
+        "dto.ReferralLinkLookup": {
             "type": "object",
             "properties": {
                 "code": {
@@ -3604,16 +3533,13 @@ const docTemplate = `{
                 }
             }
         },
-        "partner.ReferralListItem": {
+        "dto.ReferralListItem": {
             "type": "object",
             "properties": {
                 "createdAt": {
                     "type": "string"
                 },
                 "endedAt": {
-                    "type": "string"
-                },
-                "firstDepositAt": {
                     "type": "string"
                 },
                 "firstTradeAt": {
@@ -3629,7 +3555,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "referredUser": {
-                    "$ref": "#/definitions/partner.ReferralUserRef"
+                    "$ref": "#/definitions/dto.ReferralUserRef"
                 },
                 "referredUserId": {
                     "type": "string"
@@ -3645,7 +3571,7 @@ const docTemplate = `{
                 }
             }
         },
-        "partner.ReferralUserRef": {
+        "dto.ReferralUserRef": {
             "type": "object",
             "properties": {
                 "firstName": {
@@ -4139,21 +4065,6 @@ const docTemplate = `{
                 "userId"
             ],
             "properties": {
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
-        "structs.UserDepositedParams": {
-            "type": "object",
-            "required": [
-                "amount",
-                "userId"
-            ],
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
                 "userId": {
                     "type": "string"
                 }

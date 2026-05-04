@@ -68,7 +68,7 @@ func (co EventsController) TradeEvent(c *gin.Context) {
 // @Tags          System Events
 // @Produce       json
 // @Param         code path string true "Referral code, e.g. ABC1234"
-// @Success       200 {object} structs.ResponseBody{body=partner.ReferralLinkLookup}
+// @Success       200 {object} structs.ResponseBody{body=dto.ReferralLinkLookup}
 // @Failure       401 {object} structs.ErrorResponse
 // @Failure       404 {object} structs.ErrorResponse
 // @Failure       500 {object} structs.ErrorResponse
