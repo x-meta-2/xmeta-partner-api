@@ -48,23 +48,12 @@ func Connect() *gorm.DB {
 			&Payout{},
 			&PayoutItem{},
 
-			// NOTE: admin_permissions, admin_groups, admin_group_permissions,
-			// admin_users tables are managed by xmeta-admin-api (shared DB).
-			// Do NOT auto-migrate them here.
-			//
-			// NOTE: partner_notifications, partner_activity_logs,
-			// partner_daily_stats removed — add back when features are ready.
 		); err != nil {
 			panic(err.Error())
 		}
 	} else {
 		log.Println("DB_AUTO_MIGRATE=false, skipping AutoMigrate")
 	}
-
-	// Custom migrations always run — each step is idempotent. Use this
-	// for changes AutoMigrate can't handle safely (drop columns, drop
-	// uniques, partial indexes, data backfills, …). Toggle individual
-	// migrations on/off inside RunMigrations.
 	if viper.GetBool("DB_RUN_MIGRATIONS") {
 		RunMigrations(db)
 	} else {
