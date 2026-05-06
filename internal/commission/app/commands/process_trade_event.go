@@ -1,78 +1,110 @@
 package commands
 
 import (
+	"math"
+	"strconv"
 	"time"
 
 	"xmeta-partner/database"
 	"xmeta-partner/internal/commission/domain"
+	"xmeta-partner/internal/commission/port"
 	"xmeta-partner/structs"
-
-	"gorm.io/gorm"
 )
 
-type ProcessTradeEventHandler struct {
-	DB *gorm.DB
+func truncate8(v float64) float64 {
+	return math.Floor(v*1e8) / 1e8
 }
 
-func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) error {
+type TradeEventResult struct {
+	Created bool
+	Skipped bool
+	Reason  string
+}
+
+type ProcessTradeEventHandler struct {
+	Repo port.TradeEventRepo
+}
+
+func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (TradeEventResult, error) {
+	tradeFee, err := strconv.ParseFloat(params.CommissionAmount, 64)
+	if err != nil || tradeFee == 0 {
+		return TradeEventResult{Skipped: true, Reason: "zero or invalid fee"}, nil
+	}
+
 	tradeDate := time.Now()
-	if params.TradeTimestamp > 0 {
-		tradeDate = time.Unix(params.TradeTimestamp, 0)
+	if params.CreatedAt != "" {
+		if t, err := time.Parse(time.RFC3339Nano, params.CreatedAt); err == nil {
+			tradeDate = t
+		}
 	}
 
-	var referral database.Referral
-	err := h.DB.
-		Where("referred_user_id = ? AND started_at <= ? AND (ended_at IS NULL OR ended_at > ?)", params.UserID, tradeDate, tradeDate).
-		First(&referral).Error
+	kycVerified, err := h.Repo.IsUserKycVerified(params.UserID)
 	if err != nil {
-		return nil
+		return TradeEventResult{Skipped: true, Reason: "user not found"}, nil
+	}
+	if !kycVerified {
+		return TradeEventResult{Skipped: true, Reason: "user not kyc verified"}, nil
 	}
 
-	return h.DB.Transaction(func(tx *gorm.DB) error {
-		var partner database.Partner
-		if err := tx.Preload("Tier").Where("id = ? AND status = ?", referral.PartnerID, database.PartnerStatusActive).First(&partner).Error; err != nil {
-			return domain.ErrPartnerNotFound
-		}
+	exists, err := h.Repo.ExistsByPositionID(params.PositionID)
+	if err != nil {
+		return TradeEventResult{}, err
+	}
+	if exists {
+		return TradeEventResult{Skipped: true, Reason: "duplicate position"}, nil
+	}
 
-		if partner.Tier == nil {
-			return domain.ErrNoTierAssigned
-		}
+	referral, err := h.Repo.FindActiveReferral(params.UserID, tradeDate)
+	if err != nil {
+		return TradeEventResult{Skipped: true, Reason: "no active referral"}, nil
+	}
 
-		commissionRate := partner.Tier.CommissionRate
-		commissionAmount := params.TradeFee * commissionRate
+	partner, err := h.Repo.FindActivePartnerWithTier(referral.PartnerID)
+	if err != nil {
+		return TradeEventResult{}, domain.ErrPartnerNotFound
+	}
 
-		commission := database.Commission{
-			PartnerID:        partner.ID,
-			ReferredUserID:   params.UserID,
-			TradeID:          params.TradeID,
-			TradeAmount:      params.TradeAmount,
-			CommissionRate:   commissionRate,
-			CommissionAmount: commissionAmount,
-			TierID:           &partner.TierID,
-			Status:           database.CommissionStatusPending,
-			TradeDate:        tradeDate,
-		}
-		if err := tx.Create(&commission).Error; err != nil {
-			return err
-		}
+	if partner.UserID == params.UserID {
+		return TradeEventResult{Skipped: true, Reason: "self-trade"}, nil
+	}
 
-		if err := tx.Model(&database.Partner{}).
-			Where("id = ?", partner.ID).
-			Update("total_earnings", gorm.Expr("total_earnings + ?", commissionAmount)).Error; err != nil {
-			return err
-		}
+	if partner.Tier == nil {
+		return TradeEventResult{}, domain.ErrNoTierAssigned
+	}
 
-		if referral.FirstTradeAt == nil {
-			if err := tx.Model(&database.Referral{}).
-				Where("id = ?", referral.ID).
-				Updates(map[string]interface{}{
-					"first_trade_at": &tradeDate,
-					"status":         database.ReferralStatusActive,
-				}).Error; err != nil {
-				return err
-			}
-		}
+	commissionRate := partner.Tier.CommissionRate
+	rebateAmount := truncate8(tradeFee * commissionRate)
 
-		return nil
-	})
+	var volumeUSD float64
+	if v, err := strconv.ParseFloat(params.VolumeInUSD, 64); err == nil {
+		volumeUSD = v
+	}
+
+	commission := database.Commission{
+		PartnerID:        partner.ID,
+		ReferredUserID:   params.UserID,
+		PositionID:       params.PositionID,
+		MarketID:         params.MarketID,
+		Asset:            params.CommissionAsset,
+		CommissionAmount: tradeFee,
+		VolumeUSD:        volumeUSD,
+		CommissionRate:   commissionRate,
+		RebateAmount:     rebateAmount,
+		TierID:           &partner.TierID,
+		Status:           database.CommissionStatusPending,
+		TradeDate:        tradeDate,
+	}
+	if err := h.Repo.CreateCommission(&commission); err != nil {
+		return TradeEventResult{}, err
+	}
+
+	if err := h.Repo.IncrementPartnerEarnings(partner.ID, rebateAmount); err != nil {
+		return TradeEventResult{}, err
+	}
+
+	if referral.FirstTradeAt == nil {
+		_ = h.Repo.ActivateReferral(referral.ID, tradeDate)
+	}
+
+	return TradeEventResult{Created: true}, nil
 }

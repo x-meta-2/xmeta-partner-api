@@ -18,22 +18,25 @@ type Commands struct {
 }
 
 type Queries struct {
-	ListCommissions     *queries.ListCommissionsHandler
-	CommissionBreakdown *queries.CommissionBreakdownHandler
-	DailySummary        *queries.DailySummaryHandler
+	ListCommissions      *queries.ListCommissionsHandler
+	AdminListCommissions *queries.AdminListCommissionsHandler
+	CommissionBreakdown  *queries.CommissionBreakdownHandler
+	DailySummary         *queries.DailySummaryHandler
 }
 
 func NewService(db *gorm.DB) *Service {
 	commissionRepo := &adapters.GormCommissionRepo{DB: db}
+	tradeEventRepo := &adapters.GormTradeEventRepo{DB: db}
 
 	return &Service{
 		Commands: Commands{
-			ProcessTradeEvent: &commands.ProcessTradeEventHandler{DB: db},
+			ProcessTradeEvent: &commands.ProcessTradeEventHandler{Repo: tradeEventRepo},
 		},
 		Queries: Queries{
-			ListCommissions:     &queries.ListCommissionsHandler{Commissions: commissionRepo},
-			CommissionBreakdown: &queries.CommissionBreakdownHandler{Commissions: commissionRepo},
-			DailySummary:        &queries.DailySummaryHandler{Commissions: commissionRepo},
+			ListCommissions:      &queries.ListCommissionsHandler{Commissions: commissionRepo},
+			AdminListCommissions: &queries.AdminListCommissionsHandler{Commissions: commissionRepo},
+			CommissionBreakdown:  &queries.CommissionBreakdownHandler{Commissions: commissionRepo},
+			DailySummary:         &queries.DailySummaryHandler{Commissions: commissionRepo},
 		},
 	}
 }

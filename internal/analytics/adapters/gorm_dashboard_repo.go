@@ -24,12 +24,12 @@ func (r *GormDashboardRepo) GetSummary(partnerID string, params structs.Dashboar
 
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND status = ?", partnerID, "pending").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(rebate_amount), 0)").
 		Scan(&result.PendingCommission)
 
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())", partnerID).
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(rebate_amount), 0)").
 		Scan(&result.MonthEarnings)
 
 	r.DB.Model(&database.Referral{}).
@@ -38,7 +38,7 @@ func (r *GormDashboardRepo) GetSummary(partnerID string, params structs.Dashboar
 
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", partnerID).
-		Select("COALESCE(SUM(trade_amount), 0)").
+		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&result.TotalVolume)
 
 	var tradingReferrals int64
@@ -57,7 +57,7 @@ func (r *GormDashboardRepo) EarningsChart(partnerID string, params structs.Chart
 	var items []dto.EarningsChartItem
 
 	orm := r.DB.Model(&database.Commission{}).
-		Select("DATE(trade_date) as date, SUM(commission_amount) as commissions, SUM(trade_amount) as trade_volume").
+		Select("DATE(trade_date) as date, SUM(rebate_amount) as commissions, SUM(volume_usd) as trade_volume").
 		Where("partner_id = ?", partnerID)
 
 	if params.StartDate != nil {

@@ -24,10 +24,10 @@ func (h *ProcessDailyPayoutsHandler) Handle() error {
 
 	var groups []partnerPending
 	if err := h.DB.Model(&database.Commission{}).
-		Select("partner_id, SUM(commission_amount) as total_amount, COUNT(*) as commission_count").
+		Select("partner_id, SUM(rebate_amount) as total_amount, COUNT(*) as commission_count").
 		Where("status = ? AND payout_id IS NULL AND DATE(trade_date) < ?", "pending", today).
 		Group("partner_id").
-		Having("SUM(commission_amount) > 0").
+		Having("SUM(rebate_amount) > 0").
 		Scan(&groups).Error; err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (h *ProcessDailyPayoutsHandler) processPartner(g partnerPending, today stri
 			item := database.PayoutItem{
 				PayoutID:     payout.ID,
 				CommissionID: c.ID,
-				Amount:       c.CommissionAmount,
+				Amount:       c.RebateAmount,
 			}
 			if err := tx.Create(&item).Error; err != nil {
 				return err

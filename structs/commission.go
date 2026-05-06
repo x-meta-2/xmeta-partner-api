@@ -8,18 +8,28 @@ type CommissionListParams struct {
 	ReferredUserID *string `json:"referredUserId"`
 }
 
+type AdminCommissionListParams struct {
+	PaginationInput
+	Status    *string `json:"status"`
+	PartnerID *string `json:"partnerId"`
+	Asset     *string `json:"asset"`
+	Query     string  `json:"query"`
+}
+
 type CommissionBreakdownParams struct {
 	StartDate *time.Time `json:"startDate"`
 	EndDate   *time.Time `json:"endDate"`
 }
 
 type TradeEventParams struct {
-	TradeID        string  `json:"tradeId" binding:"required"`
-	UserID         string  `json:"userId" binding:"required"`
-	TradeAmount    float64 `json:"tradeAmount" binding:"required"`
-	TradeFee       float64 `json:"tradeFee" binding:"required"`
-	Symbol         string  `json:"symbol"`
-	TradeTimestamp int64   `json:"tradeTimestamp"`
+	UserID           string `json:"userId" binding:"required"`
+	AccountID        string `json:"accountId"`
+	PositionID       string `json:"positionId" binding:"required"`
+	MarketID         string `json:"marketId"`
+	CommissionAsset  string `json:"commissionAsset"`
+	CommissionAmount string `json:"commissionAmount"`
+	VolumeInUSD      string `json:"volumeInUSD"`
+	CreatedAt        string `json:"createdAt"`
 }
 
 // UserRegisteredParams — body of `POST /internal/link-referral`. Only

@@ -85,13 +85,13 @@ func (r *GormPartnerRepo) GetDetail(id string) (*dto.PartnerDetail, error) {
 	var totalVolume float64
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", id).
-		Select("COALESCE(SUM(trade_amount), 0)").
+		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&totalVolume)
 
 	var pendingCommissions float64
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND status = ?", id, "pending").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(rebate_amount), 0)").
 		Scan(&pendingCommissions)
 
 	return &dto.PartnerDetail{

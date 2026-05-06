@@ -24,9 +24,8 @@ func RunMigrations(db *gorm.DB) {
 	migrateReferralsToTimeBound(db)    // 2026-04-29 — switchable referrals
 	dropDeadReferralColumns(db)        // 2026-04-29 — utm + bonus + ip/ua were never wired
 	dropSubAffiliateArtifacts(db)      // 2026-04-30 — full sub-affiliate removal
-
-	// ── Completed (kept commented as a changelog) ──────────────────────
-	// migrateReferralsToTimeBound(db) // 2026-04-29
+	migrateCommissionsSchema(db)       // 2026-05-05 — align with monorepo trade event format
+	renameCommissionColumns(db)        // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
 
 	log.Println("Custom migrations completed!")
 }
@@ -127,6 +126,63 @@ func dropDeadReferralColumns(db *gorm.DB) {
 	}
 }
 
+// migrateCommissionsSchema aligns the commissions table with the monorepo
+// trade event format:
+//
+//   - trade_id      → position_id
+//   - trade_amount  → fee_amount (via trade_fee intermediate)
+//   - trade_fee     → fee_amount
+//   - commission_asset → asset
+//   - NEW market_id, asset, fee_amount, volume_usd
+//   - DROP asset_id (was composite key experiment)
+func migrateCommissionsSchema(db *gorm.DB) {
+	log.Println("→ migrateCommissionsSchema")
+
+	addColumnIfMissing(db, "commissions", "market_id", "VARCHAR NOT NULL DEFAULT ''")
+	addColumnIfMissing(db, "commissions", "volume_usd", "DECIMAL(20,8) NOT NULL DEFAULT 0")
+
+	if hasColumn(db, "commissions", "trade_id") && hasColumn(db, "commissions", "position_id") {
+		db.Exec("UPDATE commissions SET position_id = trade_id WHERE position_id = ''")
+	}
+	if hasColumn(db, "commissions", "trade_fee") && hasColumn(db, "commissions", "fee_amount") {
+		db.Exec("UPDATE commissions SET fee_amount = trade_fee WHERE fee_amount = 0")
+	}
+	if hasColumn(db, "commissions", "trade_amount") && hasColumn(db, "commissions", "fee_amount") {
+		db.Exec("UPDATE commissions SET fee_amount = trade_amount WHERE fee_amount = 0")
+	}
+	if hasColumn(db, "commissions", "commission_asset") && hasColumn(db, "commissions", "asset") {
+		db.Exec("UPDATE commissions SET asset = commission_asset WHERE asset = ''")
+	}
+
+	dropColumn(db, "commissions", "trade_id")
+	dropColumn(db, "commissions", "trade_amount")
+	dropColumn(db, "commissions", "trade_fee")
+	dropColumn(db, "commissions", "commission_asset")
+	dropColumn(db, "commissions", "asset_id")
+
+	for _, idx := range []string{
+		"idx_position_asset",
+		"idx_commissions_trade_id",
+	} {
+		dropIndex(db, idx)
+	}
+
+	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_commissions_position_id ON commissions(position_id)")
+
+	log.Println("✓ commissions schema aligned with monorepo format")
+}
+
+// renameCommissionColumns renames the Commission model columns to clarify
+// semantics: fee_amount → commission_amount (the raw fee from monorepo),
+// commission_amount → rebate_amount (the partner's share after rate applied).
+// Order matters: rename commission_amount first so the name is free for
+// the second rename.
+func renameCommissionColumns(db *gorm.DB) {
+	log.Println("→ renameCommissionColumns")
+	renameColumn(db, "commissions", "commission_amount", "rebate_amount")
+	renameColumn(db, "commissions", "fee_amount", "commission_amount")
+}
+
 // ─── helpers ──────────────────────────────────────────────────────────
 
 func hasColumn(db *gorm.DB, table, column string) bool {
@@ -183,23 +239,4 @@ func renameColumn(db *gorm.DB, table, oldName, newName string) {
 		return
 	}
 	log.Printf("  ✓ Renamed %s.%s → %s", table, oldName, newName)
-}
-
-func dropForeignKey(db *gorm.DB, table, constraint string) {
-	sql := fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT IF EXISTS %s", table, constraint)
-	if err := db.Exec(sql).Error; err != nil {
-		log.Printf("  Error dropping FK %s on %s: %v", constraint, table, err)
-	}
-}
-
-func dropNotNullConstraint(db *gorm.DB, table, column string) {
-	if !hasColumn(db, table, column) {
-		return
-	}
-	sql := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP NOT NULL", table, column)
-	if err := db.Exec(sql).Error; err != nil {
-		log.Printf("  Error dropping NOT NULL on %s.%s: %v", table, column, err)
-		return
-	}
-	log.Printf("  ✓ Dropped NOT NULL %s.%s", table, column)
 }

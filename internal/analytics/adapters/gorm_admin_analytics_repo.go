@@ -28,11 +28,11 @@ func (r *GormAdminAnalyticsRepo) Summary(params structs.DashboardSummaryParams) 
 		return result, err
 	}
 
-	if err := r.DB.Model(&database.Commission{}).Select("COALESCE(SUM(commission_amount), 0)").Scan(&result.TotalCommissions).Error; err != nil {
+	if err := r.DB.Model(&database.Commission{}).Select("COALESCE(SUM(rebate_amount), 0)").Scan(&result.TotalCommissions).Error; err != nil {
 		return result, err
 	}
 
-	if err := r.DB.Model(&database.Commission{}).Select("COALESCE(SUM(trade_amount), 0)").Scan(&result.TotalVolume).Error; err != nil {
+	if err := r.DB.Model(&database.Commission{}).Select("COALESCE(SUM(volume_usd), 0)").Scan(&result.TotalVolume).Error; err != nil {
 		return result, err
 	}
 
@@ -51,7 +51,7 @@ func (r *GormAdminAnalyticsRepo) CommissionTrend(params structs.ChartParams) ([]
 	var items []dto.TrendItem
 
 	orm := r.DB.Model(&database.Commission{}).
-		Select("DATE(trade_date) as date, SUM(commission_amount) as total_commission, SUM(trade_amount) as total_volume, COUNT(*) as transaction_count")
+		Select("DATE(trade_date) as date, SUM(rebate_amount) as total_commission, SUM(volume_usd) as total_volume, COUNT(*) as transaction_count")
 
 	if params.StartDate != nil {
 		orm = orm.Where("trade_date >= ?", params.StartDate)
@@ -77,7 +77,7 @@ func (r *GormAdminAnalyticsRepo) TopPartners(params structs.PaginationInput) ([]
 	offset := (pInput.Current - 1) * pInput.PageSize
 
 	var partners []database.Partner
-	if err := r.DB.Preload("Tier").
+	if err := r.DB.Preload("Tier").Preload("User").
 		Where("status = ?", "active").
 		Order("total_earnings desc").
 		Offset(offset).

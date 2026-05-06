@@ -30,13 +30,13 @@ func (h *AdminReferralDetailHandler) Handle(id string) (*dto.AdminReferralDetail
 	var totalEarned float64
 	h.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND referred_user_id = ?", referral.PartnerID, referral.ReferredUserID).
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(rebate_amount), 0)").
 		Scan(&totalEarned)
 
 	var totalVolume float64
 	h.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND referred_user_id = ?", referral.PartnerID, referral.ReferredUserID).
-		Select("COALESCE(SUM(trade_amount), 0)").
+		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&totalVolume)
 
 	return &dto.AdminReferralDetail{

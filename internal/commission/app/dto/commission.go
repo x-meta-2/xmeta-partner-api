@@ -7,7 +7,7 @@ type CommissionBreakdown struct {
 
 type DailyItem struct {
 	Date             string  `json:"date"`
-	CommissionAmount float64 `json:"commissionAmount"`
+	RebateAmount float64 `json:"rebateAmount"`
 	TradeVolume      float64 `json:"tradeVolume"`
 	Count            int64   `json:"count"`
 }

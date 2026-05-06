@@ -534,6 +534,101 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/partner/commissions/import": {
+            "post": {
+                "description": "Accepts an array of trade events (from Excel upload) and processes each through the commission engine",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Commissions"
+                ],
+                "summary": "Batch import trade events",
+                "parameters": [
+                    {
+                        "description": "Array of trade events",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/structs.TradeEventParams"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/admin.ImportResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/commissions/list": {
+            "post": {
+                "description": "Returns a paginated list of all commissions across all partners",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Commissions"
+                ],
+                "summary": "List all commissions (admin)",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.AdminCommissionListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/admin/partner/config/tiers": {
             "get": {
                 "security": [
@@ -3099,6 +3194,43 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "admin.ImportError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "row": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "admin.ImportResult": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.ImportError"
+                    }
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "database.AdminGroup": {
             "type": "object",
             "properties": {
@@ -3591,6 +3723,43 @@ const docTemplate = `{
                 }
             }
         },
+        "structs.AdminCommissionListParams": {
+            "type": "object",
+            "properties": {
+                "asset": {
+                    "type": "string"
+                },
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "structs.AdminReferralListParams": {
             "type": "object",
             "properties": {
@@ -4033,28 +4202,32 @@ const docTemplate = `{
         "structs.TradeEventParams": {
             "type": "object",
             "required": [
-                "tradeAmount",
-                "tradeFee",
-                "tradeId",
+                "positionId",
                 "userId"
             ],
             "properties": {
-                "symbol": {
+                "accountId": {
                     "type": "string"
                 },
-                "tradeAmount": {
-                    "type": "number"
-                },
-                "tradeFee": {
-                    "type": "number"
-                },
-                "tradeId": {
+                "commissionAmount": {
                     "type": "string"
                 },
-                "tradeTimestamp": {
-                    "type": "integer"
+                "commissionAsset": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "marketId": {
+                    "type": "string"
+                },
+                "positionId": {
+                    "type": "string"
                 },
                 "userId": {
+                    "type": "string"
+                },
+                "volumeInUSD": {
                     "type": "string"
                 }
             }

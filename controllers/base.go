@@ -12,22 +12,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Register Controller
 func Register(router *gin.RouterGroup) {
 	database := db.Connect()
-
-	// Activity log middleware
 	router.Use(middlewares.ActivityLog(database))
 
 	bc := common.Controller{DB: database}
 
-	// Public routes (no auth)
 	public.Controller{Controller: bc}.Register(router.Group("public/partner"))
-
-	// Internal/system routes (API key auth — events from monorepo)
 	system.EventsController{Controller: bc}.Register(router.Group("internal"))
 
-	// Partner routes (partner Cognito auth)
 	partnerGroup := router.Group("partner")
 	partner.AuthController{Controller: bc}.Register(partnerGroup.Group("auth"))
 	partner.DashboardController{Controller: bc}.Register(partnerGroup.Group("dashboard"))
@@ -36,7 +29,6 @@ func Register(router *gin.RouterGroup) {
 	partner.CommissionController{Controller: bc}.Register(partnerGroup.Group("commissions"))
 	partner.PayoutController{Controller: bc}.Register(partnerGroup.Group("payouts"))
 
-	// Admin routes (admin Cognito auth + RBAC)
 	adminGroup := router.Group("admin/partner")
 	admin.ApplicationController{Controller: bc}.Register(adminGroup.Group("applications"))
 	admin.PartnerController{Controller: bc}.Register(adminGroup.Group("partners"))
@@ -44,4 +36,5 @@ func Register(router *gin.RouterGroup) {
 	admin.ConfigController{Controller: bc}.Register(adminGroup.Group("config"))
 	admin.PayoutController{Controller: bc}.Register(adminGroup.Group("payouts"))
 	admin.AnalyticsController{Controller: bc}.Register(adminGroup.Group("analytics"))
+	admin.CommissionController{Controller: bc}.Register(adminGroup.Group("commissions"))
 }

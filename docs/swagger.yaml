@@ -1,5 +1,29 @@
 basePath: /api/v1
 definitions:
+  admin.ImportError:
+    properties:
+      message:
+        type: string
+      row:
+        type: integer
+      userId:
+        type: string
+    type: object
+  admin.ImportResult:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/admin.ImportError'
+        type: array
+      failed:
+        type: integer
+      skipped:
+        type: integer
+      success:
+        type: integer
+      total:
+        type: integer
+    type: object
   database.AdminGroup:
     properties:
       createdAt:
@@ -343,6 +367,31 @@ definitions:
       maskedEmail:
         type: string
     type: object
+  structs.AdminCommissionListParams:
+    properties:
+      asset:
+        type: string
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      partnerId:
+        type: string
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
   structs.AdminReferralListParams:
     properties:
       current:
@@ -642,22 +691,24 @@ definitions:
     type: object
   structs.TradeEventParams:
     properties:
-      symbol:
+      accountId:
         type: string
-      tradeAmount:
-        type: number
-      tradeFee:
-        type: number
-      tradeId:
+      commissionAmount:
         type: string
-      tradeTimestamp:
-        type: integer
+      commissionAsset:
+        type: string
+      createdAt:
+        type: string
+      marketId:
+        type: string
+      positionId:
+        type: string
       userId:
         type: string
+      volumeInUSD:
+        type: string
     required:
-    - tradeAmount
-    - tradeFee
-    - tradeId
+    - positionId
     - userId
     type: object
   structs.UnlinkReferralEventParams:
@@ -1004,6 +1055,63 @@ paths:
       summary: List partner applications
       tags:
       - Admin Applications
+  /admin/partner/commissions/import:
+    post:
+      consumes:
+      - application/json
+      description: Accepts an array of trade events (from Excel upload) and processes
+        each through the commission engine
+      parameters:
+      - description: Array of trade events
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/structs.TradeEventParams'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/admin.ImportResult'
+              type: object
+      summary: Batch import trade events
+      tags:
+      - Admin Commissions
+  /admin/partner/commissions/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns a paginated list of all commissions across all partners
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.AdminCommissionListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+      summary: List all commissions (admin)
+      tags:
+      - Admin Commissions
   /admin/partner/config/tiers:
     get:
       consumes:

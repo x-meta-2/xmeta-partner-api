@@ -141,7 +141,7 @@ func (s *Service) GetTierDetails(partnerID string) (map[string]interface{}, erro
 	var totalVolume float64
 	s.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", partnerID).
-		Select("COALESCE(SUM(trade_amount), 0)").
+		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&totalVolume)
 
 	var activeClients int64

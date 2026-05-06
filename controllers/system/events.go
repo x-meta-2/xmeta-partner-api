@@ -53,7 +53,7 @@ func (co EventsController) TradeEvent(c *gin.Context) {
 		return
 	}
 
-	err := co.CommissionService.Commands.ProcessTradeEvent.Handle(params)
+	_, err := co.CommissionService.Commands.ProcessTradeEvent.Handle(params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return
