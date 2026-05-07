@@ -1659,7 +1659,7 @@ const docTemplate = `{
                         "InternalKey": []
                     }
                 ],
-                "description": "Called by xmeta-monorepo right after Cognito signup completes for any user that arrived through a ` + "`" + `?ref=CODE` + "`" + ` link. Mirrors ` + "`" + `POST /partner/auth/link-referral` + "`" + ` but is server-to-server (X-Internal-Key) instead of user-authenticated.",
+                "description": "Called by xmeta-monorepo right after Cognito signup completes for any user that arrived through a ` + "`" + `?ref=CODE` + "`" + ` link. Mirrors ` + "`" + `POST /partner/auth/link-referral` + "`" + ` but is server-to-server (X-Internal-API-Key) instead of user-authenticated.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1861,7 +1861,7 @@ const docTemplate = `{
                         "InternalKey": []
                     }
                 ],
-                "description": "Server-side counterpart to ` + "`" + `POST /partner/auth/unlink-referral` + "`" + `. Called by xmeta-monorepo on account closure, compliance flags, or other system-driven detachments. Past commissions stay attributed to whoever was active at trade time.",
+                "description": "Server-side counterpart to ` + "`" + `POST /partner/auth/unlink-referral` + "`" + `. Called by xmeta-monorepo on account closure, compliance flags, or other system-driven detachments (X-Internal-API-Key). Past commissions stay attributed to whoever was active at trade time.",
                 "consumes": [
                     "application/json"
                 ],
