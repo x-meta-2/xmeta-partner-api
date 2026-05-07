@@ -5,6 +5,7 @@ import (
 
 	"xmeta-partner/database"
 	"xmeta-partner/internal/partner/app/dto"
+	"xmeta-partner/internal/partner/port"
 	"xmeta-partner/structs"
 )
 
@@ -55,6 +56,9 @@ func (m *TierRepo) CountPartnersByTier(tierID string) (int64, error) {
 	return m.CountPartnersByTierFn(tierID)
 }
 func (m *TierRepo) ClearDefaultExcept(tierID string) error { return m.ClearDefaultExceptFn(tierID) }
+func (m *TierRepo) RunInTx(fn func(port.TierRepo) error) error {
+	return fn(m)
+}
 
 type PartnerRepo struct {
 	FindByIDFn     func(id string) (*database.Partner, error)

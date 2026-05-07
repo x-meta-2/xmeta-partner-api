@@ -23,7 +23,15 @@ func (h *CreateTierHandler) Handle(params structs.TierCreateParams) (database.Pa
 	}
 
 	if params.IsDefault {
-		h.Tiers.ClearDefaultExcept("")
+		if err := h.Tiers.RunInTx(func(txTiers port.TierRepo) error {
+			if err := txTiers.ClearDefaultExcept(""); err != nil {
+				return err
+			}
+			return txTiers.Create(&tier)
+		}); err != nil {
+			return database.PartnerTier{}, err
+		}
+		return tier, nil
 	}
 
 	if err := h.Tiers.Create(&tier); err != nil {

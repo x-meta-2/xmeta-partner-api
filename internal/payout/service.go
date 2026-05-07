@@ -17,6 +17,7 @@ type Commands struct {
 	ApprovePayout       *commands.ApprovePayoutHandler
 	RejectPayout        *commands.RejectPayoutHandler
 	ProcessDailyPayouts *commands.ProcessDailyPayoutsHandler
+	RequestPayout       *commands.RequestPayoutHandler
 }
 
 type Queries struct {
@@ -41,6 +42,9 @@ func NewService(db *gorm.DB) *Service {
 				Payouts: payoutRepo,
 			},
 			ProcessDailyPayouts: &commands.ProcessDailyPayoutsHandler{
+				DB: db,
+			},
+			RequestPayout: &commands.RequestPayoutHandler{
 				DB: db,
 			},
 		},

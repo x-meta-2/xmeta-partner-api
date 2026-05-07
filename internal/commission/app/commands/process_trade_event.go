@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"math"
 	"strconv"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 func truncate8(v float64) float64 {
-	return math.Floor(v*1e8) / 1e8
+	return math.Round(v*1e8) / 1e8
 }
 
 type TradeEventResult struct {
@@ -27,20 +28,22 @@ type ProcessTradeEventHandler struct {
 
 func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (TradeEventResult, error) {
 	tradeFee, err := strconv.ParseFloat(params.CommissionAmount, 64)
-	if err != nil || tradeFee == 0 {
+	if err != nil || tradeFee <= 0 {
 		return TradeEventResult{Skipped: true, Reason: "zero or invalid fee"}, nil
 	}
 
 	tradeDate := time.Now()
 	if params.CreatedAt != "" {
-		if t, err := time.Parse(time.RFC3339Nano, params.CreatedAt); err == nil {
-			tradeDate = t
+		t, err := time.Parse(time.RFC3339Nano, params.CreatedAt)
+		if err != nil {
+			return TradeEventResult{}, domain.ErrInvalidTradeDate
 		}
+		tradeDate = t
 	}
 
 	kycVerified, err := h.Repo.IsUserKycVerified(params.UserID)
 	if err != nil {
-		return TradeEventResult{Skipped: true, Reason: "user not found"}, nil
+		return TradeEventResult{}, err
 	}
 	if !kycVerified {
 		return TradeEventResult{Skipped: true, Reason: "user not kyc verified"}, nil
@@ -56,7 +59,10 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 
 	referral, err := h.Repo.FindActiveReferral(params.UserID, tradeDate)
 	if err != nil {
-		return TradeEventResult{Skipped: true, Reason: "no active referral"}, nil
+		if errors.Is(err, domain.ErrNoActiveReferral) {
+			return TradeEventResult{Skipped: true, Reason: "no active referral"}, nil
+		}
+		return TradeEventResult{}, err
 	}
 
 	partner, err := h.Repo.FindActivePartnerWithTier(referral.PartnerID)
@@ -94,17 +100,60 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 		Status:           database.CommissionStatusPending,
 		TradeDate:        tradeDate,
 	}
-	if err := h.Repo.CreateCommission(&commission); err != nil {
-		return TradeEventResult{}, err
-	}
 
-	if err := h.Repo.IncrementPartnerEarnings(partner.ID, rebateAmount); err != nil {
+	err = h.Repo.RunInTx(func(txRepo port.TradeEventRepo) error {
+		if err := txRepo.CreateCommission(&commission); err != nil {
+			return err
+		}
+		if err := txRepo.IncrementPartnerEarnings(partner.ID, rebateAmount); err != nil {
+			return err
+		}
+		if referral.FirstTradeAt == nil {
+			if err := txRepo.ActivateReferral(referral.ID, tradeDate); err != nil {
+				return err
+			}
+		}
+		return h.maybeUpgradeTier(txRepo, partner)
+	})
+	if err != nil {
+		if errors.Is(err, domain.ErrDuplicatePosition) {
+			return TradeEventResult{Skipped: true, Reason: "duplicate position"}, nil
+		}
 		return TradeEventResult{}, err
-	}
-
-	if referral.FirstTradeAt == nil {
-		_ = h.Repo.ActivateReferral(referral.ID, tradeDate)
 	}
 
 	return TradeEventResult{Created: true}, nil
+}
+
+func (h *ProcessTradeEventHandler) maybeUpgradeTier(txRepo port.TradeEventRepo, partner *database.Partner) error {
+	totalVolume, err := txRepo.GetPartnerTotalVolume(partner.ID)
+	if err != nil {
+		return err
+	}
+
+	activeClients, err := txRepo.GetPartnerActiveClients(partner.ID)
+	if err != nil {
+		return err
+	}
+
+	tiers, err := txRepo.FindAllTiersAsc()
+	if err != nil {
+		return err
+	}
+
+	var bestTier *database.PartnerTier
+	for i := range tiers {
+		t := &tiers[i]
+		volumeOK := t.MinVolume == 0 || totalVolume >= t.MinVolume
+		clientsOK := t.MinActiveClients == 0 || activeClients >= int64(t.MinActiveClients)
+		if volumeOK && clientsOK {
+			bestTier = t
+		}
+	}
+
+	if bestTier != nil && bestTier.Level > partner.Tier.Level {
+		return txRepo.UpgradePartnerTier(partner.ID, bestTier.ID, bestTier.Level)
+	}
+
+	return nil
 }

@@ -29,6 +29,7 @@ type TierRepo interface {
 	Delete(id string) error
 	CountPartnersByTier(tierID string) (int64, error)
 	ClearDefaultExcept(tierID string) error
+	RunInTx(fn func(TierRepo) error) error
 }
 
 type PartnerDetailRepo interface {

@@ -1,11 +1,14 @@
 package system
 
 import (
+	"errors"
 	"net/http"
 
 	"xmeta-partner/controllers/common"
 	internalCommission "xmeta-partner/internal/commission"
+	commissionDomain "xmeta-partner/internal/commission/domain"
 	internalReferral "xmeta-partner/internal/referral"
+	"xmeta-partner/internal/referral/domain"
 	"xmeta-partner/middlewares"
 	"xmeta-partner/structs"
 
@@ -55,7 +58,12 @@ func (co EventsController) TradeEvent(c *gin.Context) {
 
 	_, err := co.CommissionService.Commands.ProcessTradeEvent.Handle(params)
 	if err != nil {
-		co.SetError(c, http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, commissionDomain.ErrInvalidTradeDate):
+			co.SetError(c, http.StatusBadRequest, err.Error())
+		default:
+			co.SetError(c, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 
@@ -94,7 +102,7 @@ func (co EventsController) LookupReferralLink(c *gin.Context) {
 
 // LinkReferral
 // @Summary       Link a freshly signed-up user to a partner
-// @Description   Called by xmeta-monorepo right after Cognito signup completes for any user that arrived through a `?ref=CODE` link. Mirrors `POST /partner/auth/link-referral` but is server-to-server (X-Internal-Key) instead of user-authenticated.
+// @Description   Called by xmeta-monorepo right after Cognito signup completes for any user that arrived through a `?ref=CODE` link. Mirrors `POST /partner/auth/link-referral` but is server-to-server (X-Internal-API-Key) instead of user-authenticated.
 // @Tags          System Events
 // @Accept        json
 // @Produce       json
@@ -116,7 +124,15 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 
 	err := co.ReferralService.Commands.LinkReferral.Handle(params.UserID, params.ReferralCode)
 	if err != nil {
-		co.SetError(c, http.StatusInternalServerError, err.Error())
+		switch {
+		case errors.Is(err, domain.ErrLinkNotFound):
+			co.SetError(c, http.StatusNotFound, err.Error())
+		case errors.Is(err, domain.ErrPartnerNotActive),
+			errors.Is(err, domain.ErrSelfReferral):
+			co.SetError(c, http.StatusBadRequest, err.Error())
+		default:
+			co.SetError(c, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 
@@ -125,7 +141,7 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 
 // UnlinkReferral
 // @Summary       Unlink a user from their current partner
-// @Description   Server-side counterpart to `POST /partner/auth/unlink-referral`. Called by xmeta-monorepo on account closure, compliance flags, or other system-driven detachments. Past commissions stay attributed to whoever was active at trade time.
+// @Description   Server-side counterpart to `POST /partner/auth/unlink-referral`. Called by xmeta-monorepo on account closure, compliance flags, or other system-driven detachments (X-Internal-API-Key). Past commissions stay attributed to whoever was active at trade time.
 // @Tags          System Events
 // @Accept        json
 // @Produce       json

@@ -6,6 +6,7 @@ import (
 
 	"xmeta-partner/database"
 	"xmeta-partner/internal/commission/app/dto"
+	"xmeta-partner/internal/commission/port"
 	"xmeta-partner/structs"
 )
 
@@ -43,6 +44,10 @@ type TradeEventRepo struct {
 	CreateCommissionFn          func(c *database.Commission) error
 	IncrementPartnerEarningsFn  func(partnerID string, amount float64) error
 	ActivateReferralFn          func(referralID string, firstTradeAt time.Time) error
+	GetPartnerTotalVolumeFn     func(partnerID string) (float64, error)
+	GetPartnerActiveClientsFn   func(partnerID string) (int64, error)
+	FindAllTiersAscFn           func() ([]database.PartnerTier, error)
+	UpgradePartnerTierFn        func(partnerID string, newTierID string, newLevel int) error
 }
 
 func (m *TradeEventRepo) ExistsByPositionID(positionID string) (bool, error) {
@@ -65,4 +70,19 @@ func (m *TradeEventRepo) IncrementPartnerEarnings(partnerID string, amount float
 }
 func (m *TradeEventRepo) ActivateReferral(referralID string, firstTradeAt time.Time) error {
 	return m.ActivateReferralFn(referralID, firstTradeAt)
+}
+func (m *TradeEventRepo) GetPartnerTotalVolume(partnerID string) (float64, error) {
+	return m.GetPartnerTotalVolumeFn(partnerID)
+}
+func (m *TradeEventRepo) GetPartnerActiveClients(partnerID string) (int64, error) {
+	return m.GetPartnerActiveClientsFn(partnerID)
+}
+func (m *TradeEventRepo) FindAllTiersAsc() ([]database.PartnerTier, error) {
+	return m.FindAllTiersAscFn()
+}
+func (m *TradeEventRepo) UpgradePartnerTier(partnerID string, newTierID string, newLevel int) error {
+	return m.UpgradePartnerTierFn(partnerID, newTierID, newLevel)
+}
+func (m *TradeEventRepo) RunInTx(fn func(port.TradeEventRepo) error) error {
+	return fn(m)
 }

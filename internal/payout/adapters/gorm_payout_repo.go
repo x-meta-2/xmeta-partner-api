@@ -44,7 +44,7 @@ func (r *GormPayoutRepo) AdminList(params structs.PayoutListParams) ([]database.
 	pInput := common.PreparePaginationInput(params.PaginationInput)
 	params.PaginationInput = pInput
 
-	orm := r.DB.Model(&database.Payout{}).Preload("Partner")
+	orm := r.DB.Model(&database.Payout{}).Preload("Partner").Preload("Partner.User")
 	orm = common.Equal(orm, "status", params.Status)
 	orm = common.Equal(orm, "partner_id", params.PartnerID)
 
@@ -68,7 +68,7 @@ func (r *GormPayoutRepo) Detail(partnerID, id string) (*database.Payout, []datab
 	}
 
 	var items []database.PayoutItem
-	if err := r.DB.Where("payout_id = ?", id).Find(&items).Error; err != nil {
+	if err := r.DB.Preload("Commission").Where("payout_id = ?", id).Find(&items).Error; err != nil {
 		return nil, nil, err
 	}
 
@@ -77,7 +77,7 @@ func (r *GormPayoutRepo) Detail(partnerID, id string) (*database.Payout, []datab
 
 func (r *GormPayoutRepo) AdminDetail(id string) (*database.Payout, []database.PayoutItem, error) {
 	var payout database.Payout
-	if err := r.DB.Preload("Partner").Where("id = ?", id).First(&payout).Error; err != nil {
+	if err := r.DB.Preload("Partner").Preload("Partner.User").Where("id = ?", id).First(&payout).Error; err != nil {
 		return nil, nil, err
 	}
 

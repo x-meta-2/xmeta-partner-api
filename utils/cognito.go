@@ -2,6 +2,9 @@ package utils
 
 import (
 	"context"
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,6 +22,8 @@ type CognitoService struct {
 	client     *cognitoidentityprovider.Client
 	userPoolID string
 	clientID   string
+	issuer     string
+	jwks       *jwksCache
 }
 
 type CognitoAuthResult struct {
@@ -30,7 +35,6 @@ type CognitoAuthResult struct {
 	Session       string
 }
 
-// Dual Cognito pools: admin and partner
 var AdminCognitoProvider *CognitoService
 var PartnerCognitoProvider *CognitoService
 
@@ -40,15 +44,19 @@ func InitCognito() error {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	// Initialize Admin Cognito pool
+	region := strings.TrimSpace(viper.GetString("AWS_REGION"))
+
 	adminPoolID := viper.GetString("COGNITO_USER_POOL_ID")
 	adminClientID := viper.GetString("COGNITO_CLIENT_ID")
 
 	if adminPoolID != "" && adminClientID != "" {
+		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, adminPoolID)
 		AdminCognitoProvider = &CognitoService{
 			client:     cognitoidentityprovider.NewFromConfig(cfg),
 			userPoolID: adminPoolID,
 			clientID:   adminClientID,
+			issuer:     issuer,
+			jwks:       newJWKSCache(issuer + "/.well-known/jwks.json"),
 		}
 		log.Println("Admin Cognito service initialized successfully")
 	} else {
@@ -58,15 +66,17 @@ func InitCognito() error {
 		)
 	}
 
-	// Initialize Partner Cognito pool
 	partnerPoolID := viper.GetString("PARTNER_COGNITO_USER_POOL_ID")
 	partnerClientID := viper.GetString("PARTNER_COGNITO_CLIENT_ID")
 
 	if partnerPoolID != "" && partnerClientID != "" {
+		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, partnerPoolID)
 		PartnerCognitoProvider = &CognitoService{
 			client:     cognitoidentityprovider.NewFromConfig(cfg),
 			userPoolID: partnerPoolID,
 			clientID:   partnerClientID,
+			issuer:     issuer,
+			jwks:       newJWKSCache(issuer + "/.well-known/jwks.json"),
 		}
 		log.Println("Partner Cognito service initialized successfully")
 	} else {
@@ -96,6 +106,96 @@ func GetAdminCognitoService() *CognitoService {
 
 func GetPartnerCognitoService() *CognitoService {
 	return PartnerCognitoProvider
+}
+
+// VerifyIDToken verifies the JWT signature against the Cognito JWKS and
+// validates issuer, audience, expiration, and token_use claims.
+func (cs *CognitoService) VerifyIDToken(tokenString string) (map[string]interface{}, error) {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token format")
+	}
+
+	headerJSON, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid token header: %w", err)
+	}
+
+	var header struct {
+		Kid string `json:"kid"`
+		Alg string `json:"alg"`
+	}
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
+		return nil, fmt.Errorf("invalid token header: %w", err)
+	}
+
+	if header.Alg != "RS256" {
+		return nil, fmt.Errorf("unsupported algorithm: %s", header.Alg)
+	}
+
+	pubKey, err := cs.jwks.getKey(header.Kid)
+	if err != nil {
+		return nil, fmt.Errorf("key lookup failed: %w", err)
+	}
+
+	signingInput := parts[0] + "." + parts[1]
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return nil, fmt.Errorf("invalid signature encoding: %w", err)
+	}
+
+	hash := sha256.Sum256([]byte(signingInput))
+	if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hash[:], signature); err != nil {
+		return nil, fmt.Errorf("invalid token signature")
+	}
+
+	payloadJSON, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid token payload: %w", err)
+	}
+
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payloadJSON, &claims); err != nil {
+		return nil, fmt.Errorf("invalid token claims: %w", err)
+	}
+
+	if iss, _ := claims["iss"].(string); iss != cs.issuer {
+		return nil, fmt.Errorf("invalid issuer: %s", iss)
+	}
+
+	if aud, _ := claims["aud"].(string); aud != cs.clientID {
+		return nil, fmt.Errorf("invalid audience: %s", aud)
+	}
+
+	if tokenUse, _ := claims["token_use"].(string); tokenUse != "id" {
+		return nil, fmt.Errorf("not an ID token (token_use=%s)", tokenUse)
+	}
+
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("missing expiration claim")
+	}
+	if time.Now().Unix() > int64(exp) {
+		return nil, fmt.Errorf("token has expired")
+	}
+
+	return claims, nil
+}
+
+// DecodeAdminToken verifies a JWT from the Admin Cognito pool.
+func DecodeAdminToken(idToken string) (map[string]interface{}, error) {
+	if AdminCognitoProvider == nil {
+		return nil, fmt.Errorf("admin cognito not configured")
+	}
+	return AdminCognitoProvider.VerifyIDToken(idToken)
+}
+
+// DecodePartnerToken verifies a JWT from the Partner Cognito pool.
+func DecodePartnerToken(idToken string) (map[string]interface{}, error) {
+	if PartnerCognitoProvider == nil {
+		return nil, fmt.Errorf("partner cognito not configured")
+	}
+	return PartnerCognitoProvider.VerifyIDToken(idToken)
 }
 
 func (cs *CognitoService) AuthenticateUser(
@@ -187,7 +287,6 @@ func (cs *CognitoService) GetUser(ctx context.Context, accessToken string) (*cog
 	input := &cognitoidentityprovider.GetUserInput{
 		AccessToken: aws.String(accessToken),
 	}
-
 	return cs.client.GetUser(ctx, input)
 }
 
@@ -218,53 +317,4 @@ func (cs *CognitoService) RefreshToken(
 		RefreshToken: refreshToken,
 		ExpiresIn:    result.AuthenticationResult.ExpiresIn,
 	}, nil
-}
-
-// DecodeAdminToken decodes and validates a JWT from the Admin Cognito pool
-func DecodeAdminToken(idToken string) (map[string]interface{}, error) {
-	return decodeCognitoIDToken(idToken)
-}
-
-// DecodePartnerToken decodes and validates a JWT from the Partner Cognito pool
-func DecodePartnerToken(idToken string) (map[string]interface{}, error) {
-	return decodeCognitoIDToken(idToken)
-}
-
-func decodeCognitoIDToken(idToken string) (map[string]interface{}, error) {
-	parts := strings.Split(idToken, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("invalid token format")
-	}
-
-	payload := parts[1]
-	decoded, err := base64.RawURLEncoding.DecodeString(payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode token: %w", err)
-	}
-
-	var claims map[string]interface{}
-	if err := json.Unmarshal(decoded, &claims); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal claims: %w", err)
-	}
-
-	// Validate token expiration
-	if exp, ok := claims["exp"].(float64); ok {
-		expirationTime := int64(exp)
-		currentTime := GetCurrentTimestamp()
-
-		if currentTime > expirationTime {
-			log.Printf("Token expired: current=%d, exp=%d, diff=%d seconds",
-				currentTime, expirationTime, currentTime-expirationTime)
-			return nil, fmt.Errorf("token has expired")
-		}
-	} else {
-		return nil, fmt.Errorf("token missing expiration (exp) claim")
-	}
-
-	return claims, nil
-}
-
-// GetCurrentTimestamp returns the current Unix timestamp in seconds
-func GetCurrentTimestamp() int64 {
-	return time.Now().Unix()
 }

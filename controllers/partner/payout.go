@@ -23,6 +23,7 @@ func (co PayoutController) Register(router *gin.RouterGroup) {
 		r.POST("/list", co.List)
 		r.GET("/detail/:id", co.Detail)
 		r.GET("/pending", co.Pending)
+		r.POST("/request", co.Request)
 	}
 }
 
@@ -127,4 +128,22 @@ func (co PayoutController) Pending(c *gin.Context) {
 	}
 
 	co.SetBody(c, result)
+}
+
+func (co PayoutController) Request(c *gin.Context) {
+	defer func() { c.JSON(co.GetBody(c)) }()
+
+	partner := middlewares.PartnerGetAuth(c)
+	if partner == nil {
+		co.SetError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	payout, err := co.Service.Commands.RequestPayout.Handle(partner.ID)
+	if err != nil {
+		co.SetError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	co.SetBody(c, payout)
 }

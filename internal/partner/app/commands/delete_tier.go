@@ -11,6 +11,15 @@ type DeleteTierHandler struct {
 }
 
 func (h *DeleteTierHandler) Handle(id string) error {
+	tier, err := h.Tiers.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	if tier.IsDefault {
+		return fmt.Errorf("cannot delete the default tier")
+	}
+
 	count, err := h.Tiers.CountPartnersByTier(id)
 	if err != nil {
 		return err

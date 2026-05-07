@@ -8,6 +8,9 @@ type PayoutDetail struct {
 }
 
 type PendingInfo struct {
-	PendingAmount float64 `json:"pendingAmount"`
-	PendingCount  int64   `json:"pendingCount"`
+	PendingBalance  float64 `json:"pendingBalance"`
+	PendingCount    int64   `json:"pendingCount"`
+	TotalPaid       float64 `json:"totalPaid"`
+	LastPayoutDate  *string `json:"lastPayoutDate"`
+	MinPayoutAmount float64 `json:"minPayoutAmount"`
 }

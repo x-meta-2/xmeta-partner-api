@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	"xmeta-partner/database"
 	"xmeta-partner/internal/partner/port"
 	"xmeta-partner/structs"
@@ -11,7 +13,8 @@ type UpdateTierHandler struct {
 }
 
 func (h *UpdateTierHandler) Handle(id string, params structs.TierUpdateParams) (database.PartnerTier, error) {
-	if _, err := h.Tiers.FindByID(id); err != nil {
+	current, err := h.Tiers.FindByID(id)
+	if err != nil {
 		return database.PartnerTier{}, err
 	}
 
@@ -35,17 +38,32 @@ func (h *UpdateTierHandler) Handle(id string, params structs.TierUpdateParams) (
 		updates["max_volume"] = *params.MaxVolume
 	}
 	if params.IsDefault != nil {
-		if *params.IsDefault {
-			h.Tiers.ClearDefaultExcept(id)
+		if !*params.IsDefault && current.IsDefault {
+			return database.PartnerTier{}, fmt.Errorf("cannot unset the default tier")
 		}
-		updates["is_default"] = *params.IsDefault
+		if *params.IsDefault {
+			updates["is_default"] = true
+		} else {
+			updates["is_default"] = false
+		}
 	}
 	if params.Color != nil {
 		updates["color"] = *params.Color
 	}
 
 	if len(updates) > 0 {
-		if err := h.Tiers.Update(id, updates); err != nil {
+		err := func() error {
+			if params.IsDefault != nil && *params.IsDefault {
+				return h.Tiers.RunInTx(func(txTiers port.TierRepo) error {
+					if err := txTiers.ClearDefaultExcept(id); err != nil {
+						return err
+					}
+					return txTiers.Update(id, updates)
+				})
+			}
+			return h.Tiers.Update(id, updates)
+		}()
+		if err != nil {
 			return database.PartnerTier{}, err
 		}
 	}

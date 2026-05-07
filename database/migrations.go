@@ -26,6 +26,8 @@ func RunMigrations(db *gorm.DB) {
 	dropSubAffiliateArtifacts(db)      // 2026-04-30 — full sub-affiliate removal
 	migrateCommissionsSchema(db)       // 2026-05-05 — align with monorepo trade event format
 	renameCommissionColumns(db)        // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
+	ensureDefaultTier(db)              // 2026-05-07 — guarantee at least one default tier exists
+	addPayoutConcurrencyGuard(db)      // 2026-05-07 — partial unique index: one pending/processing payout per partner
 
 	log.Println("Custom migrations completed!")
 }
@@ -181,6 +183,63 @@ func renameCommissionColumns(db *gorm.DB) {
 	log.Println("→ renameCommissionColumns")
 	renameColumn(db, "commissions", "commission_amount", "rebate_amount")
 	renameColumn(db, "commissions", "fee_amount", "commission_amount")
+}
+
+func ensureDefaultTier(db *gorm.DB) {
+	log.Println("→ ensureDefaultTier")
+
+	var defaults []PartnerTier
+	db.Where("is_default = ?", true).Order("created_at asc").Find(&defaults)
+
+	if len(defaults) > 1 {
+		log.Printf("  Found %d default tiers — keeping oldest, clearing rest", len(defaults))
+		keep := defaults[0].ID
+		db.Model(&PartnerTier{}).
+			Where("is_default = ? AND id != ?", true, keep).
+			Update("is_default", false)
+	}
+
+	if len(defaults) == 0 {
+		log.Println("  No default tier found, creating Standard tier")
+		tier := PartnerTier{
+			Name:           "Standard",
+			Level:          1,
+			CommissionRate: 0.20,
+			IsDefault:      true,
+			Color:          "#6b7280",
+		}
+		if err := db.Create(&tier).Error; err != nil {
+			log.Printf("  Error creating default tier: %v", err)
+			return
+		}
+	}
+
+	db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_partner_tiers_one_default
+		ON partner_tiers (is_default)
+		WHERE is_default = true
+	`)
+
+	log.Println("✓ Default tier invariant enforced")
+}
+
+// addPayoutConcurrencyGuard creates a partial unique index on the payouts
+// table so that each partner can have at most one active (pending or
+// processing) payout at any time. The advisory lock in the application
+// layer is the first line of defence; this index is the DB-level backstop.
+func addPayoutConcurrencyGuard(db *gorm.DB) {
+	log.Println("→ addPayoutConcurrencyGuard")
+
+	if err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_one_active_per_partner
+		ON payouts (partner_id)
+		WHERE status IN ('pending', 'processing')
+	`).Error; err != nil {
+		log.Printf("  Error creating payout concurrency index: %v", err)
+		return
+	}
+
+	log.Println("✓ Payout concurrency guard index created")
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────

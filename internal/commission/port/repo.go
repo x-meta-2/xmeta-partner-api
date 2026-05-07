@@ -23,4 +23,9 @@ type TradeEventRepo interface {
 	CreateCommission(c *database.Commission) error
 	IncrementPartnerEarnings(partnerID string, amount float64) error
 	ActivateReferral(referralID string, firstTradeAt time.Time) error
+	GetPartnerTotalVolume(partnerID string) (float64, error)
+	GetPartnerActiveClients(partnerID string) (int64, error)
+	FindAllTiersAsc() ([]database.PartnerTier, error)
+	UpgradePartnerTier(partnerID string, newTierID string, newLevel int) error
+	RunInTx(fn func(TradeEventRepo) error) error
 }

@@ -31,8 +31,9 @@ type (
 
 	PayoutItem struct {
 		Base
-		PayoutID     string  `gorm:"column:payout_id;not null;index" json:"payoutId"`
-		CommissionID string  `gorm:"column:commission_id;not null;index" json:"commissionId"`
-		Amount       float64 `gorm:"column:amount;type:decimal(20,8);not null" json:"amount"`
+		PayoutID     string      `gorm:"column:payout_id;not null;index" json:"payoutId"`
+		CommissionID string      `gorm:"column:commission_id;not null;index" json:"commissionId"`
+		Commission   *Commission `gorm:"foreignKey:CommissionID" json:"commission,omitempty"`
+		Amount       float64     `gorm:"column:amount;type:decimal(20,8);not null" json:"amount"`
 	}
 )

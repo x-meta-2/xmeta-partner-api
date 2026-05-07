@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"xmeta-partner/database"
+	"xmeta-partner/internal/partner/port"
 
 	"gorm.io/gorm"
 )
@@ -55,7 +56,20 @@ func (r *GormTierRepo) CountPartnersByTier(tierID string) (int64, error) {
 }
 
 func (r *GormTierRepo) ClearDefaultExcept(tierID string) error {
-	return r.DB.Model(&database.PartnerTier{}).
-		Where("id != ? AND is_default = ?", tierID, true).
-		Update("is_default", false).Error
+	return r.DB.Exec(`
+		UPDATE partner_tiers
+		SET is_default = false, updated_at = NOW()
+		WHERE id != ? AND is_default = true
+		AND id IN (
+			SELECT id FROM partner_tiers
+			WHERE id != ? AND is_default = true
+			FOR UPDATE
+		)
+	`, tierID, tierID).Error
+}
+
+func (r *GormTierRepo) RunInTx(fn func(port.TierRepo) error) error {
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		return fn(&GormTierRepo{DB: tx})
+	})
 }
