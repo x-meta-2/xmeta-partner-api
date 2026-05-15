@@ -3,9 +3,11 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"xmeta-partner/database"
 	"xmeta-partner/structs"
+	"xmeta-partner/utils"
 
 	"gorm.io/gorm"
 )
@@ -72,6 +74,11 @@ func (s *Service) Signup(params structs.PartnerSignupParams) (database.PartnerAp
 		return database.PartnerApplication{}, fmt.Errorf("a partner account already exists for this user")
 	}
 
+	locale := params.Locale
+	if locale != "en" {
+		locale = "mn"
+	}
+
 	app := database.PartnerApplication{
 		UserID:        params.UserID,
 		CompanyName:   params.CompanyName,
@@ -79,11 +86,19 @@ func (s *Service) Signup(params structs.PartnerSignupParams) (database.PartnerAp
 		SocialMedia:   params.SocialMedia,
 		AudienceSize:  params.AudienceSize,
 		PromotionPlan: params.PromotionPlan,
+		Locale:        locale,
 		Status:        database.ApplicationStatusPending,
 	}
 
 	if err := s.DB.Create(&app).Error; err != nil {
 		return database.PartnerApplication{}, err
+	}
+
+	if es := utils.GetEmailService(); es != nil {
+		log.Printf("[Email] partner application email trigger userId=%s locale=%s", user.ID, locale)
+		es.SendPartnerApplicationEmail(user.Email, locale)
+	} else {
+		log.Printf("[Email] partner application email skipped userId=%s reason=email_service_not_initialized", user.ID)
 	}
 
 	return app, nil

@@ -23,6 +23,7 @@ type PartnerApplication struct {
 	SocialMedia     map[string]interface{} `gorm:"column:social_media;serializer:json" json:"socialMedia"`
 	AudienceSize    string                 `gorm:"column:audience_size" json:"audienceSize"`
 	PromotionPlan   string                 `gorm:"column:promotion_plan;type:text" json:"promotionPlan"`
+	Locale          string                 `gorm:"column:locale;size:5;default:mn" json:"locale"`
 	Status          ApplicationStatus      `gorm:"column:status;not null;default:pending;index" json:"status"`
 	ReviewedBy      *string                `gorm:"column:reviewed_by" json:"reviewedBy"`
 	// Reviewer mirrors ReviewedBy as the actual admin row, preloaded by

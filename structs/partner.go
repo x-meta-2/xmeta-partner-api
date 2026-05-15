@@ -9,6 +9,9 @@ type PartnerSignupParams struct {
 	SocialMedia   map[string]interface{} `json:"socialMedia"`
 	AudienceSize  string                 `json:"audienceSize"`
 	PromotionPlan string                 `json:"promotionPlan"`
+	// Locale is the language the user was browsing in when they applied ("mn" or "en").
+	// Used to send the confirmation email in the correct language.
+	Locale        string                 `json:"locale"`
 }
 
 // PartnerProfileUpdateParams — partner-owned fields only.

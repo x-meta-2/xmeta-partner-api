@@ -44,6 +44,10 @@ func main() {
 		log.Printf("Warning: Failed to initialize Cognito: %v", err)
 	}
 
+	if err := utils.InitEmail(); err != nil {
+		log.Printf("Warning: Failed to initialize SES email: %v", err)
+	}
+
 	gin.SetMode(gin.DebugMode)
 	app := gin.Default()
 	app.Use(middlewares.CORS)
