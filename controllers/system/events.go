@@ -31,6 +31,7 @@ func (co EventsController) Register(router *gin.RouterGroup) {
 		r.GET("/referral-links/:code", co.LookupReferralLink)
 		r.POST("/link-referral", co.LinkReferral)
 		r.POST("/unlink-referral", co.UnlinkReferral)
+		r.POST("/referrals/check-user", co.CheckDirectReferral)
 	}
 }
 
@@ -169,3 +170,32 @@ func (co EventsController) UnlinkReferral(c *gin.Context) {
 	co.SetBody(c, structs.SuccessResponse{Success: true})
 }
 
+// CheckDirectReferral
+// @Summary       Check an active partner's direct referral
+// @Description   Internal-only lookup. OwnerUID and UserID are Cognito user IDs. Non-partners, unknown users, and referrals owned by another partner return false.
+// @Tags          System Events
+// @Accept        json
+// @Produce       json
+// @Param         request body structs.ReferralCheckParams true "Referral check payload"
+// @Success       200 {object} structs.ResponseBody{body=structs.ReferralCheckResponse}
+// @Failure       400 {object} structs.ErrorResponse
+// @Failure       401 {object} structs.ErrorResponse
+// @Failure       500 {object} structs.ErrorResponse
+// @Security      InternalKey
+// @Router        /internal/referrals/check-user [post]
+func (co EventsController) CheckDirectReferral(c *gin.Context) {
+	defer func() { c.JSON(co.GetBody(c)) }()
+
+	var params structs.ReferralCheckParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		co.SetError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	isReferral, err := co.ReferralService.Queries.CheckDirectReferral.Handle(params.OwnerUID, params.UserID)
+	if err != nil {
+		co.SetError(c, http.StatusInternalServerError, "Could not check referral")
+		return
+	}
+	co.SetBody(c, structs.ReferralCheckResponse{IsReferral: isReferral})
+}

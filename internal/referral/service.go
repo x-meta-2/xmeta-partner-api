@@ -25,6 +25,7 @@ type Queries struct {
 	ReferralStats       *queries.ReferralStatsHandler
 	ListLinks           *queries.ListLinksHandler
 	LookupLink          *queries.LookupLinkHandler
+	CheckDirectReferral *queries.CheckDirectReferralHandler
 	AdminListReferrals  *queries.AdminListReferralsHandler
 	AdminReferralDetail *queries.AdminReferralDetailHandler
 }
@@ -47,11 +48,12 @@ func NewService(db *gorm.DB) *Service {
 			},
 		},
 		Queries: Queries{
-			ListReferrals:  &queries.ListReferralsHandler{Referrals: referralRepo},
-			ReferralDetail: &queries.ReferralDetailHandler{Referrals: referralRepo},
-			ReferralStats:  &queries.ReferralStatsHandler{DB: db},
-			ListLinks:      &queries.ListLinksHandler{Links: linkRepo},
-			LookupLink:     &queries.LookupLinkHandler{DB: db},
+			ListReferrals:       &queries.ListReferralsHandler{Referrals: referralRepo},
+			ReferralDetail:      &queries.ReferralDetailHandler{Referrals: referralRepo},
+			ReferralStats:       &queries.ReferralStatsHandler{DB: db},
+			ListLinks:           &queries.ListLinksHandler{Links: linkRepo},
+			LookupLink:          &queries.LookupLinkHandler{DB: db},
+			CheckDirectReferral: &queries.CheckDirectReferralHandler{DB: db},
 			AdminListReferrals: &queries.AdminListReferralsHandler{
 				Referrals: referralRepo,
 			},
