@@ -24,7 +24,7 @@ type ReferralListItem struct {
 	StartedAt      time.Time               `json:"startedAt"`
 	EndedAt        *time.Time              `json:"endedAt"`
 	RegisteredAt   time.Time               `json:"registeredAt"`
-	FirstTradeAt *time.Time `json:"firstTradeAt"`
+	FirstTradeAt   *time.Time              `json:"firstTradeAt"`
 	CreatedAt      time.Time               `json:"createdAt"`
 }
 
@@ -41,6 +41,17 @@ type ReferralLinkLookup struct {
 	PartnerID       string `json:"partnerId"`
 	PartnerEmail    string `json:"partnerEmail,omitempty"`
 	PartnerFullName string `json:"partnerFullName,omitempty"`
+}
+
+type CurrentReferralPartner struct {
+	Email        string `json:"email,omitempty"`
+	FirstName    string `json:"firstName,omitempty"`
+	ReferralCode string `json:"referralCode"`
+}
+
+type CurrentReferral struct {
+	ReferralCode string                 `json:"referralCode"`
+	Partner      CurrentReferralPartner `json:"partner"`
 }
 
 type AdminReferralDetail struct {

@@ -33,6 +33,7 @@ func Register(router *gin.RouterGroup) {
 	admin.ApplicationController{Controller: bc}.Register(adminGroup.Group("applications"))
 	admin.PartnerController{Controller: bc}.Register(adminGroup.Group("partners"))
 	admin.ReferralController{Controller: bc}.Register(adminGroup.Group("referrals"))
+	admin.UnlinkRequestController{Controller: bc}.Register(adminGroup.Group("referral-unlink-requests"))
 	admin.ConfigController{Controller: bc}.Register(adminGroup.Group("config"))
 	admin.PayoutController{Controller: bc}.Register(adminGroup.Group("payouts"))
 	admin.AnalyticsController{Controller: bc}.Register(adminGroup.Group("analytics"))

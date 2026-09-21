@@ -25,3 +25,19 @@ type ReferralLinkCreateParams struct {
 	// Empty/omitted → server auto-generates a 7-character code.
 	Code string `json:"code"`
 }
+
+type ReferralUnlinkRequestCreateParams struct {
+	UserID string `json:"userId" binding:"required"`
+	Reason string `json:"reason" binding:"required,min=3,max=1000"`
+}
+
+type ReferralUnlinkRequestReviewParams struct {
+	AdminNote string `json:"adminNote"`
+}
+
+type ReferralUnlinkRequestListParams struct {
+	PaginationInput
+	PartnerID *string `json:"partnerId"`
+	Status    *string `json:"status"`
+	Query     string  `json:"query"`
+}

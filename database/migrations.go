@@ -21,13 +21,14 @@ func RunMigrations(db *gorm.DB) {
 	log.Println("!!! RunMigrations STARTING !!!")
 
 	// ── Active migrations ──────────────────────────────────────────────
-	migrateReferralsToTimeBound(db)    // 2026-04-29 — switchable referrals
-	dropDeadReferralColumns(db)        // 2026-04-29 — utm + bonus + ip/ua were never wired
-	dropSubAffiliateArtifacts(db)      // 2026-04-30 — full sub-affiliate removal
-	migrateCommissionsSchema(db)       // 2026-05-05 — align with monorepo trade event format
-	renameCommissionColumns(db)        // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
-	ensureDefaultTier(db)              // 2026-05-07 — guarantee at least one default tier exists
-	addPayoutConcurrencyGuard(db)      // 2026-05-07 — partial unique index: one pending/processing payout per partner
+	migrateReferralsToTimeBound(db)   // 2026-04-29 — switchable referrals
+	dropDeadReferralColumns(db)       // 2026-04-29 — utm + bonus + ip/ua were never wired
+	dropSubAffiliateArtifacts(db)     // 2026-04-30 — full sub-affiliate removal
+	migrateCommissionsSchema(db)      // 2026-05-05 — align with monorepo trade event format
+	renameCommissionColumns(db)       // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
+	ensureDefaultTier(db)             // 2026-05-07 — guarantee at least one default tier exists
+	addPayoutConcurrencyGuard(db)     // 2026-05-07 — partial unique index: one pending/processing payout per partner
+	addReferralUnlinkRequestGuard(db) // 2026-09-21 — one pending unlink request per referred user
 
 	log.Println("Custom migrations completed!")
 }
@@ -240,6 +241,21 @@ func addPayoutConcurrencyGuard(db *gorm.DB) {
 	}
 
 	log.Println("✓ Payout concurrency guard index created")
+}
+
+func addReferralUnlinkRequestGuard(db *gorm.DB) {
+	log.Println("→ addReferralUnlinkRequestGuard")
+
+	if err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_referral_unlink_requests_one_pending_per_user
+		ON referral_unlink_requests (referred_user_id)
+		WHERE status = 'pending'
+	`).Error; err != nil {
+		log.Printf("  Error creating referral unlink request guard index: %v", err)
+		return
+	}
+
+	log.Println("✓ Referral unlink request guard index created")
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────

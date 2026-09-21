@@ -14,20 +14,25 @@ type Service struct {
 }
 
 type Commands struct {
-	LinkReferral   *commands.LinkReferralHandler
-	UnlinkReferral *commands.UnlinkReferralHandler
-	CreateLink     *commands.CreateLinkHandler
+	LinkReferral         *commands.LinkReferralHandler
+	UnlinkReferral       *commands.UnlinkReferralHandler
+	CreateLink           *commands.CreateLinkHandler
+	CreateUnlinkRequest  *commands.CreateUnlinkRequestHandler
+	ApproveUnlinkRequest *commands.ApproveUnlinkRequestHandler
+	RejectUnlinkRequest  *commands.RejectUnlinkRequestHandler
 }
 
 type Queries struct {
-	ListReferrals       *queries.ListReferralsHandler
-	ReferralDetail      *queries.ReferralDetailHandler
-	ReferralStats       *queries.ReferralStatsHandler
-	ListLinks           *queries.ListLinksHandler
-	LookupLink          *queries.LookupLinkHandler
-	CheckDirectReferral *queries.CheckDirectReferralHandler
-	AdminListReferrals  *queries.AdminListReferralsHandler
-	AdminReferralDetail *queries.AdminReferralDetailHandler
+	ListReferrals           *queries.ListReferralsHandler
+	ReferralDetail          *queries.ReferralDetailHandler
+	ReferralStats           *queries.ReferralStatsHandler
+	ListLinks               *queries.ListLinksHandler
+	LookupLink              *queries.LookupLinkHandler
+	CurrentReferral         *queries.CurrentReferralHandler
+	CheckDirectReferral     *queries.CheckDirectReferralHandler
+	AdminListReferrals      *queries.AdminListReferralsHandler
+	AdminReferralDetail     *queries.AdminReferralDetailHandler
+	AdminListUnlinkRequests *queries.AdminListUnlinkRequestsHandler
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -46,6 +51,15 @@ func NewService(db *gorm.DB) *Service {
 			CreateLink: &commands.CreateLinkHandler{
 				Links: linkRepo,
 			},
+			CreateUnlinkRequest: &commands.CreateUnlinkRequestHandler{
+				DB: db,
+			},
+			ApproveUnlinkRequest: &commands.ApproveUnlinkRequestHandler{
+				DB: db,
+			},
+			RejectUnlinkRequest: &commands.RejectUnlinkRequestHandler{
+				DB: db,
+			},
 		},
 		Queries: Queries{
 			ListReferrals:       &queries.ListReferralsHandler{Referrals: referralRepo},
@@ -53,6 +67,7 @@ func NewService(db *gorm.DB) *Service {
 			ReferralStats:       &queries.ReferralStatsHandler{DB: db},
 			ListLinks:           &queries.ListLinksHandler{Links: linkRepo},
 			LookupLink:          &queries.LookupLinkHandler{DB: db},
+			CurrentReferral:     &queries.CurrentReferralHandler{DB: db},
 			CheckDirectReferral: &queries.CheckDirectReferralHandler{DB: db},
 			AdminListReferrals: &queries.AdminListReferralsHandler{
 				Referrals: referralRepo,
@@ -61,6 +76,7 @@ func NewService(db *gorm.DB) *Service {
 				DB:        db,
 				Referrals: referralRepo,
 			},
+			AdminListUnlinkRequests: &queries.AdminListUnlinkRequestsHandler{DB: db},
 		},
 	}
 }

@@ -40,6 +40,7 @@ func Connect() *gorm.DB {
 			// Referrals
 			&ReferralLink{},
 			&Referral{},
+			&ReferralUnlinkRequest{},
 
 			// Commissions
 			&Commission{},
