@@ -9,3 +9,7 @@ type PayoutListParams struct {
 type PayoutReviewParams struct {
 	FailureReason string `json:"failureReason"`
 }
+
+type PayoutCompleteParams struct {
+	TransactionID string `json:"transactionId" binding:"required"`
+}

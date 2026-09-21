@@ -1452,6 +1452,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/partner/payouts/{id}/complete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks a processing payout as completed after the transfer is done",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payouts"
+                ],
+                "summary": "Complete payout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payout ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transfer transaction",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.PayoutCompleteParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.Payout"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/partner/payouts/{id}/reject": {
             "post": {
                 "security": [
@@ -1772,6 +1848,75 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/referrals/check-user": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Internal-only lookup. OwnerUID and UserID are Cognito user IDs. Non-partners, unknown users, and referrals owned by another partner return false.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Check an active partner's direct referral",
+                "parameters": [
+                    {
+                        "description": "Referral check payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralCheckParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.ReferralCheckResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/structs.ErrorResponse"
                         }
@@ -2212,7 +2357,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns commissions grouped by source (direct, sub-affiliate, etc.)",
+                "description": "Returns commissions grouped by direct referral source",
                 "consumes": [
                     "application/json"
                 ],
@@ -3387,6 +3532,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "locale": {
+                    "type": "string"
+                },
                 "promotionPlan": {
                     "type": "string"
                 },
@@ -4010,6 +4158,10 @@ const docTemplate = `{
                 "companyName": {
                     "type": "string"
                 },
+                "locale": {
+                    "description": "Locale is the language the user was browsing in when they applied (\"mn\" or \"en\").\nUsed to send the confirmation email in the correct language.",
+                    "type": "string"
+                },
                 "promotionPlan": {
                     "type": "string"
                 },
@@ -4022,6 +4174,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "website": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.PayoutCompleteParams": {
+            "type": "object",
+            "required": [
+                "transactionId"
+            ],
+            "properties": {
+                "transactionId": {
                     "type": "string"
                 }
             }
@@ -4062,6 +4225,29 @@ const docTemplate = `{
             "properties": {
                 "failureReason": {
                     "type": "string"
+                }
+            }
+        },
+        "structs.ReferralCheckParams": {
+            "type": "object",
+            "required": [
+                "ownerUid",
+                "userId"
+            ],
+            "properties": {
+                "ownerUid": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ReferralCheckResponse": {
+            "type": "object",
+            "properties": {
+                "isReferral": {
+                    "type": "boolean"
                 }
             }
         },
@@ -4269,7 +4455,7 @@ const docTemplate = `{
         "InternalKey": {
             "description": "Server-to-server API key shared with xmeta-monorepo",
             "type": "apiKey",
-            "name": "X-Internal-Key",
+            "name": "X-Internal-API-Key",
             "in": "header"
         }
     }
@@ -4282,7 +4468,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "xmeta Partner API",
-	Description:      "Partner program backend — public, partner, admin, system endpoints.\nAuthentication is split into three layers:\n• BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.\n• InternalKey: `X-Internal-Key` header — only the xmeta-monorepo server should send this.",
+	Description:      "Partner program backend — public, partner, admin, system endpoints.\nAuthentication is split into three layers:\n• BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.\n• InternalKey: `X-Internal-API-Key` header — only the xmeta-monorepo server should send this.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

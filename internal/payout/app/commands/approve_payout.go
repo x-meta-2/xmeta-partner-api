@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"time"
-
 	"xmeta-partner/database"
 	"xmeta-partner/internal/payout/domain"
 	"xmeta-partner/internal/payout/port"
@@ -23,18 +21,15 @@ func (h *ApprovePayoutHandler) Handle(id, adminID string) (database.Payout, erro
 			return domain.ErrPayoutNotFound
 		}
 
-		now := time.Now()
 		payout.Status = database.PayoutStatusProcessing
 		payout.ApprovedBy = &adminID
-		payout.ProcessedAt = &now
+		payout.ProcessedAt = nil
 
 		if err := tx.Save(&payout).Error; err != nil {
 			return err
 		}
 
-		return tx.Model(&database.Commission{}).
-			Where("payout_id = ?", id).
-			Update("status", "paid").Error
+		return nil
 	})
 
 	if err != nil {

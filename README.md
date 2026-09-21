@@ -1,6 +1,6 @@
 # xmeta-partner-api
 
-Backend service for the X-Meta Partner Program — a 2-tier affiliate system layered on top of the main X-Meta exchange. Partners earn futures-trading commissions from their referred users, and parent partners earn an override on their sub-affiliates' commissions.
+Backend service for the X-Meta Partner Program — a partner affiliate system layered on top of the main X-Meta exchange. Partners earn futures-trading commissions from their referred users.
 
 Written in Go (Gin + GORM), backed by PostgreSQL, fronted by xmeta-partner-web. Plugs into xmeta-monorepo via internal events for trade/deposit/registration hooks.
 
@@ -54,7 +54,6 @@ All routes are mounted under `/api/v1`.
 - `links/*` — list, create (max 5 codes per partner)
 - `commissions/*` — list, breakdown, daily summary
 - `payouts/*` — list, detail, pending balance
-- `sub-affiliates/*` — list, invite, stats
 
 ### Admin back-office (`/api/v1/admin/partner/*`) — Bearer (admin Cognito) + RBAC
 - `applications/*` — list, detail, approve, reject

@@ -22,7 +22,7 @@ import (
 // @description     Partner program backend — public, partner, admin, system endpoints.
 // @description     Authentication is split into three layers:
 // @description       • BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.
-// @description       • InternalKey: `X-Internal-Key` header — only the xmeta-monorepo server should send this.
+// @description       • InternalKey: `X-Internal-API-Key` header — only the xmeta-monorepo server should send this.
 // @host            localhost:8090
 // @BasePath        /api/v1
 // @schemes         http https
@@ -34,7 +34,7 @@ import (
 
 // @securityDefinitions.apikey InternalKey
 // @in header
-// @name X-Internal-Key
+// @name X-Internal-API-Key
 // @description Server-to-server API key shared with xmeta-monorepo
 
 func main() {

@@ -48,6 +48,8 @@ func Connect() *gorm.DB {
 			&Payout{},
 			&PayoutItem{},
 
+			// Audit
+			&PartnerActivityLog{},
 		); err != nil {
 			panic(err.Error())
 		}

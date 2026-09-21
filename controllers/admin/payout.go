@@ -24,6 +24,7 @@ func (co PayoutController) Register(router *gin.RouterGroup) {
 		r.GET("/detail/:id", co.Detail)
 		r.POST("/pending", co.PendingList)
 		r.POST("/:id/approve", co.Approve)
+		r.POST("/:id/complete", co.Complete)
 		r.POST("/:id/reject", co.Reject)
 	}
 }
@@ -153,6 +154,50 @@ func (co PayoutController) Approve(c *gin.Context) {
 	}
 
 	result, err := co.Service.Commands.ApprovePayout.Handle(id, admin.ID)
+	if err != nil {
+		co.SetError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	co.SetBody(c, result)
+}
+
+// Complete
+// @Summary       Complete payout
+// @Description   Marks a processing payout as completed after the transfer is done
+// @Tags          Admin Payouts
+// @Accept        json
+// @Produce       json
+// @Param         id path string true "Payout ID"
+// @Param         request body structs.PayoutCompleteParams true "Transfer transaction"
+// @Success       200 {object} structs.ResponseBody{body=database.Payout}
+// @Failure       400 {object} structs.ErrorResponse
+// @Failure       401 {object} structs.ErrorResponse
+// @Failure       500 {object} structs.ErrorResponse
+// @Security      BearerAuth
+// @Router        /admin/partner/payouts/{id}/complete [post]
+func (co PayoutController) Complete(c *gin.Context) {
+	defer func() { c.JSON(co.GetBody(c)) }()
+
+	admin := middlewares.AdminGetAuth(c)
+	if admin == nil {
+		co.SetError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id := c.Param("id")
+	if id == "" {
+		co.SetError(c, http.StatusBadRequest, "id is required")
+		return
+	}
+
+	var params structs.PayoutCompleteParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		co.SetError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := co.Service.Commands.CompletePayout.Handle(id, params)
 	if err != nil {
 		co.SetError(c, http.StatusInternalServerError, err.Error())
 		return

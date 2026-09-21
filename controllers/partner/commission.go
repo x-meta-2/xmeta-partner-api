@@ -65,7 +65,7 @@ func (co CommissionController) List(c *gin.Context) {
 
 // Breakdown
 // @Summary       Commission breakdown
-// @Description   Returns commissions grouped by source (direct, sub-affiliate, etc.)
+// @Description   Returns commissions grouped by direct referral source
 // @Tags          Partner Commissions
 // @Accept        json
 // @Produce       json

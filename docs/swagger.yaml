@@ -137,6 +137,8 @@ definitions:
         type: string
       id:
         type: string
+      locale:
+        type: string
       promotionPlan:
         type: string
       rejectionReason:
@@ -559,6 +561,11 @@ definitions:
         type: string
       companyName:
         type: string
+      locale:
+        description: |-
+          Locale is the language the user was browsing in when they applied ("mn" or "en").
+          Used to send the confirmation email in the correct language.
+        type: string
       promotionPlan:
         type: string
       socialMedia:
@@ -571,6 +578,13 @@ definitions:
         type: string
       website:
         type: string
+    type: object
+  structs.PayoutCompleteParams:
+    properties:
+      transactionId:
+        type: string
+    required:
+    - transactionId
     type: object
   structs.PayoutListParams:
     properties:
@@ -597,6 +611,21 @@ definitions:
     properties:
       failureReason:
         type: string
+    type: object
+  structs.ReferralCheckParams:
+    properties:
+      ownerUid:
+        type: string
+      userId:
+        type: string
+    required:
+    - ownerUid
+    - userId
+    type: object
+  structs.ReferralCheckResponse:
+    properties:
+      isReferral:
+        type: boolean
     type: object
   structs.ReferralLinkCreateParams:
     properties:
@@ -735,7 +764,7 @@ info:
     Partner program backend — public, partner, admin, system endpoints.
     Authentication is split into three layers:
     • BearerAuth (PartnerAuth/AdminAuth): Cognito ID token in `Authorization: Bearer …`.
-    • InternalKey: `X-Internal-Key` header — only the xmeta-monorepo server should send this.
+    • InternalKey: `X-Internal-API-Key` header — only the xmeta-monorepo server should send this.
   title: xmeta Partner API
   version: "1.0"
 paths:
@@ -1482,6 +1511,52 @@ paths:
       summary: Approve payout
       tags:
       - Admin Payouts
+  /admin/partner/payouts/{id}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Marks a processing payout as completed after the transfer is done
+      parameters:
+      - description: Payout ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transfer transaction
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.PayoutCompleteParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.Payout'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Complete payout
+      tags:
+      - Admin Payouts
   /admin/partner/payouts/{id}/reject:
     post:
       consumes:
@@ -1812,6 +1887,49 @@ paths:
       summary: Validate a referral code
       tags:
       - System Events
+  /internal/referrals/check-user:
+    post:
+      consumes:
+      - application/json
+      description: Internal-only lookup. OwnerUID and UserID are Cognito user IDs.
+        Non-partners, unknown users, and referrals owned by another partner return
+        false.
+      parameters:
+      - description: Referral check payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralCheckParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.ReferralCheckResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Check an active partner's direct referral
+      tags:
+      - System Events
   /internal/trade-event:
     post:
       consumes:
@@ -2069,7 +2187,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Returns commissions grouped by source (direct, sub-affiliate, etc.)
+      description: Returns commissions grouped by direct referral source
       parameters:
       - description: Breakdown filters
         in: body
@@ -2683,6 +2801,6 @@ securityDefinitions:
   InternalKey:
     description: Server-to-server API key shared with xmeta-monorepo
     in: header
-    name: X-Internal-Key
+    name: X-Internal-API-Key
     type: apiKey
 swagger: "2.0"
