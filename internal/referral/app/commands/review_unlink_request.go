@@ -9,6 +9,7 @@ import (
 	"xmeta-partner/structs"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ApproveUnlinkRequestHandler struct {
@@ -20,7 +21,7 @@ func (h *ApproveUnlinkRequestHandler) Handle(id, adminID string, params structs.
 	now := time.Now()
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ?", id).First(&request).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id).First(&request).Error; err != nil {
 			return domain.ErrUnlinkRequestNotFound
 		}
 		if request.Status != database.ReferralUnlinkRequestStatusPending {
@@ -75,7 +76,7 @@ func (h *RejectUnlinkRequestHandler) Handle(id, adminID string, params structs.R
 	now := time.Now()
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Where("id = ?", id).First(&request).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id).First(&request).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.ErrUnlinkRequestNotFound
 		}

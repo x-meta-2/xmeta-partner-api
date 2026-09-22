@@ -20,7 +20,6 @@ func (r *GormDashboardRepo) GetSummary(partnerID string, params structs.Dashboar
 		return result, err
 	}
 	result.TotalEarnings = partner.TotalEarnings
-	result.TotalReferrals = partner.TotalReferrals
 
 	r.DB.Model(&database.Commission{}).
 		Where("partner_id = ? AND status = ?", partnerID, "pending").
@@ -28,12 +27,18 @@ func (r *GormDashboardRepo) GetSummary(partnerID string, params structs.Dashboar
 		Scan(&result.PendingCommission)
 
 	r.DB.Model(&database.Commission{}).
-		Where("partner_id = ? AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())", partnerID).
+		Where("partner_id = ? AND DATE_TRUNC('month', trade_date) = DATE_TRUNC('month', NOW())", partnerID).
 		Select("COALESCE(SUM(rebate_amount), 0)").
 		Scan(&result.MonthEarnings)
 
+	var totalReferrals int64
 	r.DB.Model(&database.Referral{}).
 		Where("partner_id = ? AND ended_at IS NULL", partnerID).
+		Count(&totalReferrals)
+	result.TotalReferrals = int(totalReferrals)
+
+	r.DB.Model(&database.Referral{}).
+		Where("partner_id = ? AND status = ? AND ended_at IS NULL", partnerID, database.ReferralStatusActive).
 		Count(&result.ActiveReferrals)
 
 	r.DB.Model(&database.Commission{}).
@@ -41,13 +46,8 @@ func (r *GormDashboardRepo) GetSummary(partnerID string, params structs.Dashboar
 		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&result.TotalVolume)
 
-	var tradingReferrals int64
-	r.DB.Model(&database.Referral{}).
-		Where("partner_id = ? AND ended_at IS NULL AND first_trade_at IS NOT NULL", partnerID).
-		Count(&tradingReferrals)
-
-	if result.ActiveReferrals > 0 {
-		result.ConversionRate = float64(tradingReferrals) / float64(result.ActiveReferrals) * 100
+	if result.TotalReferrals > 0 {
+		result.ConversionRate = float64(result.ActiveReferrals) / float64(result.TotalReferrals) * 100
 	}
 
 	return result, nil

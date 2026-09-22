@@ -173,6 +173,19 @@ func TestVerifyIDToken_WrongAudience(t *testing.T) {
 	assert.Contains(t, err.Error(), "audience")
 }
 
+func TestCognitoService_AllowsConfiguredAudience(t *testing.T) {
+	cs := &CognitoService{
+		clientID:         "partner-client",
+		allowedClientIDs: clientIDSet("partner-client", "sso-client, qr-client"),
+	}
+
+	assert.True(t, cs.isAllowedAudience("partner-client"))
+	assert.True(t, cs.isAllowedAudience("sso-client"))
+	assert.True(t, cs.isAllowedAudience("qr-client"))
+	assert.False(t, cs.isAllowedAudience("other-client"))
+	assert.False(t, cs.isAllowedAudience(""))
+}
+
 func TestVerifyIDToken_NotIDToken(t *testing.T) {
 	cs, key, kid := testCognitoService(t)
 	claims := validClaims(cs.issuer, cs.clientID)

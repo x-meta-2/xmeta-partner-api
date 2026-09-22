@@ -19,11 +19,12 @@ import (
 )
 
 type CognitoService struct {
-	client     *cognitoidentityprovider.Client
-	userPoolID string
-	clientID   string
-	issuer     string
-	jwks       *jwksCache
+	client           *cognitoidentityprovider.Client
+	userPoolID       string
+	clientID         string
+	allowedClientIDs map[string]struct{}
+	issuer           string
+	jwks             *jwksCache
 }
 
 type CognitoAuthResult struct {
@@ -52,11 +53,12 @@ func InitCognito() error {
 	if adminPoolID != "" && adminClientID != "" {
 		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, adminPoolID)
 		AdminCognitoProvider = &CognitoService{
-			client:     cognitoidentityprovider.NewFromConfig(cfg),
-			userPoolID: adminPoolID,
-			clientID:   adminClientID,
-			issuer:     issuer,
-			jwks:       newJWKSCache(issuer + "/.well-known/jwks.json"),
+			client:           cognitoidentityprovider.NewFromConfig(cfg),
+			userPoolID:       adminPoolID,
+			clientID:         adminClientID,
+			allowedClientIDs: clientIDSet(adminClientID, ""),
+			issuer:           issuer,
+			jwks:             newJWKSCache(issuer + "/.well-known/jwks.json"),
 		}
 		log.Println("Admin Cognito service initialized successfully")
 	} else {
@@ -68,15 +70,17 @@ func InitCognito() error {
 
 	partnerPoolID := viper.GetString("PARTNER_COGNITO_USER_POOL_ID")
 	partnerClientID := viper.GetString("PARTNER_COGNITO_CLIENT_ID")
+	partnerAllowedClientIDs := viper.GetString("PARTNER_COGNITO_ALLOWED_CLIENT_IDS")
 
 	if partnerPoolID != "" && partnerClientID != "" {
 		issuer := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s", region, partnerPoolID)
 		PartnerCognitoProvider = &CognitoService{
-			client:     cognitoidentityprovider.NewFromConfig(cfg),
-			userPoolID: partnerPoolID,
-			clientID:   partnerClientID,
-			issuer:     issuer,
-			jwks:       newJWKSCache(issuer + "/.well-known/jwks.json"),
+			client:           cognitoidentityprovider.NewFromConfig(cfg),
+			userPoolID:       partnerPoolID,
+			clientID:         partnerClientID,
+			allowedClientIDs: clientIDSet(partnerClientID, partnerAllowedClientIDs),
+			issuer:           issuer,
+			jwks:             newJWKSCache(issuer + "/.well-known/jwks.json"),
 		}
 		log.Println("Partner Cognito service initialized successfully")
 	} else {
@@ -91,6 +95,19 @@ func InitCognito() error {
 	}
 
 	return nil
+}
+
+func clientIDSet(primary string, csv string) map[string]struct{} {
+	result := map[string]struct{}{}
+	if primary = strings.TrimSpace(primary); primary != "" {
+		result[primary] = struct{}{}
+	}
+	for _, item := range strings.Split(csv, ",") {
+		if clientID := strings.TrimSpace(item); clientID != "" {
+			result[clientID] = struct{}{}
+		}
+	}
+	return result
 }
 
 func ifEmpty(val, defaultVal string) string {
@@ -163,7 +180,7 @@ func (cs *CognitoService) VerifyIDToken(tokenString string) (map[string]interfac
 		return nil, fmt.Errorf("invalid issuer: %s", iss)
 	}
 
-	if aud, _ := claims["aud"].(string); aud != cs.clientID {
+	if aud, _ := claims["aud"].(string); !cs.isAllowedAudience(aud) {
 		return nil, fmt.Errorf("invalid audience: %s", aud)
 	}
 
@@ -180,6 +197,17 @@ func (cs *CognitoService) VerifyIDToken(tokenString string) (map[string]interfac
 	}
 
 	return claims, nil
+}
+
+func (cs *CognitoService) isAllowedAudience(audience string) bool {
+	if audience == "" {
+		return false
+	}
+	if len(cs.allowedClientIDs) == 0 {
+		return audience == cs.clientID
+	}
+	_, ok := cs.allowedClientIDs[audience]
+	return ok
 }
 
 // DecodeAdminToken verifies a JWT from the Admin Cognito pool.

@@ -27,6 +27,7 @@ func LoadConfig() {
 		"COGNITO_CLIENT_ID",
 		"PARTNER_COGNITO_USER_POOL_ID",
 		"PARTNER_COGNITO_CLIENT_ID",
+		"PARTNER_COGNITO_ALLOWED_CLIENT_IDS",
 		"INTERNAL_API_KEY",
 	} {
 		if val := os.Getenv(key); val != "" {
