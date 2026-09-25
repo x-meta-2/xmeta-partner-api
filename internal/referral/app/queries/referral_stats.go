@@ -18,10 +18,18 @@ func (h *ReferralStatsHandler) Handle(partnerID string) (dto.ReferralStats, erro
 	}
 
 	var stats dto.ReferralStats
-	base().Count(&stats.Total)
-	base().Where("status = ?", "registered").Count(&stats.Registered)
-	base().Where("status = ?", "active").Count(&stats.Active)
-	base().Where("status = ?", "inactive").Count(&stats.Inactive)
+	if err := base().Count(&stats.Total).Error; err != nil {
+		return stats, err
+	}
+	if err := base().Where("status = ?", database.ReferralStatusRegistered).Count(&stats.Registered).Error; err != nil {
+		return stats, err
+	}
+	if err := base().Where("status = ?", database.ReferralStatusActive).Count(&stats.Active).Error; err != nil {
+		return stats, err
+	}
+	if err := base().Where("status = ?", database.ReferralStatusInactive).Count(&stats.Inactive).Error; err != nil {
+		return stats, err
+	}
 
 	return stats, nil
 }

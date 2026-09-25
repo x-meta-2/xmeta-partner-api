@@ -4333,6 +4333,10 @@ const docTemplate = `{
                     "description": "\"day\", \"week\", \"month\"",
                     "type": "string"
                 },
+                "period": {
+                    "description": "\"7d\", \"30d\", \"90d\", \"1y\"",
+                    "type": "string"
+                },
                 "startDate": {
                     "type": "string"
                 }

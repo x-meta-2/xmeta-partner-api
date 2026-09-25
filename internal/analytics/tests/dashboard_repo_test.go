@@ -32,9 +32,9 @@ func TestDashboardSummary_UsesLiveReferralCounts(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"coalesce"}).AddRow(1.25))
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT COALESCE(SUM(rebate_amount), 0) FROM "commissions" WHERE (partner_id = $1 AND DATE_TRUNC('month', trade_date) = DATE_TRUNC('month', NOW())) AND "commissions"."deleted_at" IS NULL`,
+		`SELECT COALESCE(SUM(rebate_amount), 0) FROM "commissions" WHERE (partner_id = $1 AND trade_date >= $2 AND trade_date < $3) AND "commissions"."deleted_at" IS NULL`,
 	)).
-		WithArgs("partner-1").
+		WithArgs("partner-1", sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"coalesce"}).AddRow(2.5))
 
 	mock.ExpectQuery(regexp.QuoteMeta(

@@ -19,7 +19,7 @@ func (h *PendingCommissionsHandler) Handle(partnerID string) (*dto.PendingInfo, 
 		Count  int64
 	}
 	if err := h.DB.Model(&database.Commission{}).
-		Where("partner_id = ? AND status = ? AND payout_id IS NULL", partnerID, "pending").
+		Where("partner_id = ? AND status = ? AND payout_id IS NULL", partnerID, database.CommissionStatusPending).
 		Select("COALESCE(SUM(rebate_amount), 0) as amount, COUNT(*) as count").
 		Scan(&pending).Error; err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"xmeta-partner/database"
 	"xmeta-partner/structs"
@@ -154,15 +155,20 @@ func (s *Service) GetTierDetails(partnerID string) (map[string]interface{}, erro
 	}
 
 	var totalVolume float64
-	s.DB.Model(&database.Commission{}).
-		Where("partner_id = ?", partnerID).
+	monthStart, nextMonthStart := currentMonthRange()
+	if err := s.DB.Model(&database.Commission{}).
+		Where("partner_id = ? AND trade_date >= ? AND trade_date < ?", partnerID, monthStart, nextMonthStart).
 		Select("COALESCE(SUM(volume_usd), 0)").
-		Scan(&totalVolume)
+		Scan(&totalVolume).Error; err != nil {
+		return nil, err
+	}
 
 	var activeClients int64
-	s.DB.Model(&database.Referral{}).
-		Where("partner_id = ? AND status = ? AND ended_at IS NULL", partnerID, database.ReferralStatusActive).
-		Count(&activeClients)
+	if err := s.DB.Model(&database.Commission{}).
+		Where("partner_id = ? AND trade_date >= ? AND trade_date < ?", partnerID, monthStart, nextMonthStart).
+		Distinct("referred_user_id").Count(&activeClients).Error; err != nil {
+		return nil, err
+	}
 
 	result := map[string]interface{}{
 		"currentTier":   partner.Tier,
@@ -205,10 +211,22 @@ func (s *Service) TrackClick(code string, ipAddress string, userAgent string) (m
 		return nil, fmt.Errorf("referral link not found")
 	}
 
-	s.DB.Model(&link).UpdateColumn("clicks", s.DB.Raw("clicks + 1"))
+	if err := s.DB.Model(&link).UpdateColumn("clicks", s.DB.Raw("clicks + 1")).Error; err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"url":  link.URL,
 		"code": link.Code,
 	}, nil
+}
+
+func currentMonthRange() (time.Time, time.Time) {
+	location, err := time.LoadLocation("Asia/Ulaanbaatar")
+	if err != nil {
+		location = time.FixedZone("UTC+8", 8*60*60)
+	}
+	now := time.Now().In(location)
+	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, location)
+	return start, start.AddDate(0, 1, 0)
 }

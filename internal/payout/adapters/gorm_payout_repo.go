@@ -14,7 +14,7 @@ type GormPayoutRepo struct {
 
 func (r *GormPayoutRepo) FindPendingByID(id string) (*database.Payout, error) {
 	var payout database.Payout
-	if err := r.DB.Where("id = ? AND status = ?", id, "pending").First(&payout).Error; err != nil {
+	if err := r.DB.Where("id = ? AND status = ?", id, database.PayoutStatusPending).First(&payout).Error; err != nil {
 		return nil, err
 	}
 	return &payout, nil
