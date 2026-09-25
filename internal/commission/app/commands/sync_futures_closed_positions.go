@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -148,7 +149,7 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 		return false, "", err
 	}
 
-	partner, err := h.Repo.FindActivePartnerWithTier(referral.PartnerID)
+	partner, err := h.Repo.FindPartnerWithTier(referral.PartnerID)
 	if err != nil {
 		return false, "", domain.ErrPartnerNotFound
 	}
@@ -252,4 +253,8 @@ func futuresMarketID(position database.FuturesClosedPosition) string {
 		return position.MarketID
 	}
 	return position.Symbol
+}
+
+func truncate4(value float64) float64 {
+	return math.Floor(value*1e4) / 1e4
 }

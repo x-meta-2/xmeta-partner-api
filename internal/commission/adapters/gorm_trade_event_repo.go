@@ -49,9 +49,11 @@ func (r *GormTradeEventRepo) FindActiveReferral(userID string, tradeDate time.Ti
 	return &referral, nil
 }
 
-func (r *GormTradeEventRepo) FindActivePartnerWithTier(partnerID string) (*database.Partner, error) {
+// FindPartnerWithTier resolves the partner recorded by the referral window.
+// The partner's current status must not affect historical trade attribution.
+func (r *GormTradeEventRepo) FindPartnerWithTier(partnerID string) (*database.Partner, error) {
 	var partner database.Partner
-	err := r.DB.Preload("Tier").Where("id = ? AND status = ?", partnerID, database.PartnerStatusActive).First(&partner).Error
+	err := r.DB.Preload("Tier").Where("id = ?", partnerID).First(&partner).Error
 	if err != nil {
 		return nil, err
 	}

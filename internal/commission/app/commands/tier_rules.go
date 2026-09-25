@@ -39,8 +39,9 @@ func bestTierForMetrics(tiers []database.PartnerTier, totalVolume float64, activ
 	for i := range tiers {
 		tier := &tiers[i]
 		volumeOK := tier.MinVolume == 0 || totalVolume >= tier.MinVolume
+		maxVolumeOK := tier.MaxVolume == nil || totalVolume < *tier.MaxVolume
 		clientsOK := tier.MinActiveClients == 0 || activeClients >= int64(tier.MinActiveClients)
-		if volumeOK && clientsOK {
+		if volumeOK && maxVolumeOK && clientsOK {
 			bestTier = tier
 		}
 	}

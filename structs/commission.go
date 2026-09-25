@@ -21,17 +21,6 @@ type CommissionBreakdownParams struct {
 	EndDate   *time.Time `json:"endDate"`
 }
 
-type TradeEventParams struct {
-	UserID           string `json:"userId" binding:"required"`
-	AccountID        string `json:"accountId"`
-	PositionID       string `json:"positionId" binding:"required"`
-	MarketID         string `json:"marketId"`
-	CommissionAsset  string `json:"commissionAsset"`
-	CommissionAmount string `json:"commissionAmount"`
-	VolumeInUSD      string `json:"volumeInUSD"`
-	CreatedAt        string `json:"createdAt"`
-}
-
 type FuturesClosedPositionSyncParams struct {
 	StartedAt string `json:"startedAt" binding:"required"`
 	EndedAt   string `json:"endedAt" binding:"required"`

@@ -19,7 +19,7 @@ type TradeEventRepo interface {
 	ExistsByPositionID(positionID string) (bool, error)
 	IsUserKycVerified(userID string) (bool, error)
 	FindActiveReferral(userID string, tradeDate time.Time) (*database.Referral, error)
-	FindActivePartnerWithTier(partnerID string) (*database.Partner, error)
+	FindPartnerWithTier(partnerID string) (*database.Partner, error)
 	CreateCommission(c *database.Commission) error
 	IncrementPartnerEarnings(partnerID string, amount float64) error
 	ActivateReferral(referralID string, firstTradeAt time.Time) error

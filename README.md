@@ -65,7 +65,8 @@ All routes are mounted under `/api/v1`.
 
 ### Internal (`/api/v1/internal/*`) — X-Internal-API-Key
 Called by xmeta-monorepo when domain events fire.
-- `POST /trade-event` — credit commissions on a trade
+- Futures commissions are synced from `futures_closed_positions` by the daily
+  `futures-commission-sync` job.
 - `GET /referral-links/:code` — preview a code (sender identity + active flag)
 - `POST /link-referral` — attach a user to a partner's code (registration or settings flow)
 - `POST /unlink-referral` — detach a user (account closure / compliance)
@@ -216,13 +217,13 @@ Brings up `app`, `postgres`, `minio`, `nginx`. Nginx terminates TLS and reverse-
 - [ ] `ALLOWED_ORIGINS` whitelisted to actual partner-portal + admin domains
 - [ ] Cognito pools configured with the right callback URLs
 - [ ] Futures commission sync scheduled at 08:00 UTC+8
-- [ ] Payout worker scheduled (CronJob, EventBridge, etc.)
+- [ ] Daily futures commission sync and monthly tier review cron jobs installed
 - [ ] Logs shipped to CloudWatch / Sentry to catch `log.Printf` errors
 
 ## Conventions
 
 - **DB models** live in `database/`; **wire types** (request/response) live in `structs/`. Never expose `database.*` directly through partner-facing endpoints — wrap in a sanitized DTO (see `partner.ReferralListItem` for the PII-masking pattern).
-- **One service per controller folder.** Cross-team helpers go in `services/` root (e.g. `commission_engine.go`, `payout_worker.go`).
+- **One service per controller folder.** Cross-team helpers go in `services/` root.
 - **Status strings are constants** (`database.PartnerStatusActive`, `database.ReferralStatusUnlinked`, etc.) — never hardcode `"active"` in business logic.
 - **Migrations are idempotent.** Use the helpers in `database/migrations.go`; assume a function may run on every boot.
 
