@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"xmeta-partner/database"
 	"xmeta-partner/internal/referral/domain"
 	"xmeta-partner/internal/referral/port"
@@ -58,7 +56,7 @@ func (h *CreateLinkHandler) Handle(partnerID string, params structs.ReferralLink
 
 	url := params.URL
 	if url == "" {
-		url = fmt.Sprintf("https://x-meta.com/?ref=%s", code)
+		url = utils.BuildReferralURL(code)
 	}
 
 	link := database.ReferralLink{

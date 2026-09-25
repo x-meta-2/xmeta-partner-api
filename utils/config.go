@@ -29,6 +29,8 @@ func LoadConfig() {
 		"PARTNER_COGNITO_CLIENT_ID",
 		"PARTNER_COGNITO_ALLOWED_CLIENT_IDS",
 		"INTERNAL_API_KEY",
+		"REFERRAL_BASE_URL",
+		"FUTURES_FEE_RATE",
 	} {
 		if val := os.Getenv(key); val != "" {
 			viper.Set(key, val)

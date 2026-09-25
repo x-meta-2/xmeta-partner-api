@@ -534,55 +534,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/partner/commissions/import": {
-            "post": {
-                "description": "Accepts an array of trade events (from Excel upload) and processes each through the commission engine",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin Commissions"
-                ],
-                "summary": "Batch import trade events",
-                "parameters": [
-                    {
-                        "description": "Array of trade events",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/structs.TradeEventParams"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/structs.ResponseBody"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/admin.ImportResult"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/admin/partner/commissions/list": {
             "post": {
                 "description": "Returns a paginated list of all commissions across all partners",
@@ -624,6 +575,40 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/commissions/sync-futures-commissions": {
+            "post": {
+                "description": "Reads futures_closed_positions directly and creates pending partner commissions for the matching referral window",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Commissions"
+                ],
+                "summary": "Sync futures closed positions into partner commissions",
+                "parameters": [
+                    {
+                        "description": "Closed position sync range",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.FuturesClosedPositionSyncParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ResponseBody"
                         }
                     }
                 }
@@ -1604,6 +1589,227 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/partner/referral-unlink-requests/list": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated user requests to stop following their current partner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Referral Unlink Requests"
+                ],
+                "summary": "List referral unlink requests",
+                "parameters": [
+                    {
+                        "description": "Filters and pagination",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralUnlinkRequestListParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/structs.PaginationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/referral-unlink-requests/{id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approves a pending request and unlinks the user from their active partner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Referral Unlink Requests"
+                ],
+                "summary": "Approve referral unlink request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Review note",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralUnlinkRequestReviewParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.ReferralUnlinkRequest"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/partner/referral-unlink-requests/{id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rejects a pending request and keeps the user's partner relationship active.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Referral Unlink Requests"
+                ],
+                "summary": "Reject referral unlink request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Review note",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralUnlinkRequestReviewParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.ReferralUnlinkRequest"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/partner/referrals/detail/{id}": {
             "get": {
                 "security": [
@@ -1861,6 +2067,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/internal/referral-unlink-requests": {
+            "post": {
+                "security": [
+                    {
+                        "InternalKey": []
+                    }
+                ],
+                "description": "Internal-only endpoint used by account-service when a logged-in user asks to stop following their current partner. This only creates a pending request; admin approval performs the actual unlink.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System Events"
+                ],
+                "summary": "Create a user unlink request",
+                "parameters": [
+                    {
+                        "description": "Unlink request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/structs.ReferralUnlinkRequestCreateParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/structs.ResponseBody"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/database.ReferralUnlinkRequest"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/structs.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/internal/referrals/check-user": {
             "post": {
                 "security": [
@@ -1930,52 +2205,35 @@ const docTemplate = `{
                 }
             }
         },
-        "/internal/trade-event": {
-            "post": {
+        "/internal/referrals/current/{userId}": {
+            "get": {
                 "security": [
                     {
                         "InternalKey": []
                     }
                 ],
-                "description": "Ingests a trade event from monorepo and runs the commission engine",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Internal-only lookup. Returns the user's active partner referral or null when the user is not currently linked to a partner.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "System Events"
                 ],
-                "summary": "Process a trade event",
+                "summary": "Get a user's current partner referral",
                 "parameters": [
                     {
-                        "description": "Trade event payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/structs.TradeEventParams"
-                        }
+                        "type": "string",
+                        "description": "Cognito user ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/structs.ResponseBody"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/structs.SuccessResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/structs.ResponseBody"
                         }
                     },
                     "400": {
@@ -3339,43 +3597,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "admin.ImportError": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "row": {
-                    "type": "integer"
-                },
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
-        "admin.ImportResult": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/admin.ImportError"
-                    }
-                },
-                "failed": {
-                    "type": "integer"
-                },
-                "skipped": {
-                    "type": "integer"
-                },
-                "success": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
         "database.AdminGroup": {
             "type": "object",
             "properties": {
@@ -3692,6 +3913,58 @@ const docTemplate = `{
                 "PayoutStatusFailed"
             ]
         },
+        "database.Referral": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "endedAt": {
+                    "type": "string"
+                },
+                "firstTradeAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partner": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "referralLink": {
+                    "description": "Preloaded by admin endpoints so the UI can show which exact code\n(primary vs custom) the user signed up through, instead of\nalways falling back to the partner's primary referral_code.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/database.ReferralLink"
+                        }
+                    ]
+                },
+                "referralLinkId": {
+                    "type": "string"
+                },
+                "referredUser": {
+                    "$ref": "#/definitions/database.User"
+                },
+                "referredUserId": {
+                    "type": "string"
+                },
+                "registeredAt": {
+                    "type": "string"
+                },
+                "startedAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/database.ReferralStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "database.ReferralLink": {
             "type": "object",
             "properties": {
@@ -3740,6 +4013,72 @@ const docTemplate = `{
                 "ReferralStatusActive",
                 "ReferralStatusInactive",
                 "ReferralStatusUnlinked"
+            ]
+        },
+        "database.ReferralUnlinkRequest": {
+            "type": "object",
+            "properties": {
+                "adminNote": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partner": {
+                    "$ref": "#/definitions/database.Partner"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "referral": {
+                    "$ref": "#/definitions/database.Referral"
+                },
+                "referralCode": {
+                    "type": "string"
+                },
+                "referralId": {
+                    "type": "string"
+                },
+                "referredUser": {
+                    "$ref": "#/definitions/database.User"
+                },
+                "referredUserId": {
+                    "type": "string"
+                },
+                "reviewedAt": {
+                    "type": "string"
+                },
+                "reviewedBy": {
+                    "type": "string"
+                },
+                "reviewer": {
+                    "$ref": "#/definitions/database.AdminUser"
+                },
+                "status": {
+                    "$ref": "#/definitions/database.ReferralUnlinkRequestStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.ReferralUnlinkRequestStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "approved",
+                "rejected"
+            ],
+            "x-enum-varnames": [
+                "ReferralUnlinkRequestStatusPending",
+                "ReferralUnlinkRequestStatusApproved",
+                "ReferralUnlinkRequestStatusRejected"
             ]
         },
         "database.User": {
@@ -4066,6 +4405,24 @@ const docTemplate = `{
                 }
             }
         },
+        "structs.FuturesClosedPositionSyncParams": {
+            "type": "object",
+            "required": [
+                "endedAt",
+                "startedAt"
+            ],
+            "properties": {
+                "endedAt": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "startedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "structs.PaginationInput": {
             "type": "object",
             "properties": {
@@ -4294,6 +4651,65 @@ const docTemplate = `{
                 }
             }
         },
+        "structs.ReferralUnlinkRequestCreateParams": {
+            "type": "object",
+            "required": [
+                "reason",
+                "userId"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "minLength": 3
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ReferralUnlinkRequestListParams": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "integer"
+                },
+                "export": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "alias for PageSize",
+                    "type": "integer"
+                },
+                "page": {
+                    "description": "alias for Current",
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "partnerId": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "sortDate": {
+                    "$ref": "#/definitions/structs.SortDate"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.ReferralUnlinkRequestReviewParams": {
+            "type": "object",
+            "properties": {
+                "adminNote": {
+                    "type": "string"
+                }
+            }
+        },
         "structs.ResponseBody": {
             "type": "object",
             "properties": {
@@ -4381,39 +4797,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "structs.TradeEventParams": {
-            "type": "object",
-            "required": [
-                "positionId",
-                "userId"
-            ],
-            "properties": {
-                "accountId": {
-                    "type": "string"
-                },
-                "commissionAmount": {
-                    "type": "string"
-                },
-                "commissionAsset": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "marketId": {
-                    "type": "string"
-                },
-                "positionId": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                },
-                "volumeInUSD": {
                     "type": "string"
                 }
             }

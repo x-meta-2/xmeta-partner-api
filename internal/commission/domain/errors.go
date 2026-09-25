@@ -9,4 +9,6 @@ var (
 	ErrUserNotKycVerified = errors.New("referred user has not passed KYC")
 	ErrDuplicatePosition  = errors.New("duplicate position already processed")
 	ErrInvalidTradeDate   = errors.New("invalid createdAt timestamp")
+	ErrInvalidSyncRange   = errors.New("invalid futures closed position sync range")
+	ErrFuturesFeeRate     = errors.New("FUTURES_FEE_RATE must be greater than 0")
 )

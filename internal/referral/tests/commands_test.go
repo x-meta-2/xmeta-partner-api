@@ -11,7 +11,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 // ---------------------------------------------------------------------------
@@ -224,8 +223,8 @@ func TestLinkReferral_SamePartnerRetry_Idempotent(t *testing.T) {
 
 	existingRows := sqlmock.NewRows([]string{"id", "partner_id", "referred_user_id", "referral_link_id", "status"}).
 		AddRow("ref-existing", "partner-1", "user-2", "link-1", "registered")
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND partner_id = $2 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $3`)).
-		WithArgs("user-2", "partner-1", 1).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $2`)).
+		WithArgs("user-2", 1).
 		WillReturnRows(existingRows)
 
 	mock.ExpectCommit()
@@ -263,8 +262,8 @@ func TestLinkReferral_SamePartnerDifferentLink_UpdatesLinkID(t *testing.T) {
 
 	existingRows := sqlmock.NewRows([]string{"id", "partner_id", "referred_user_id", "referral_link_id", "status"}).
 		AddRow("ref-existing", "partner-1", "user-2", "link-old", "registered")
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND partner_id = $2 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $3`)).
-		WithArgs("user-2", "partner-1", 1).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $2`)).
+		WithArgs("user-2", 1).
 		WillReturnRows(existingRows)
 
 	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "referrals" SET`)).
@@ -303,8 +302,8 @@ func TestLinkReferral_IdempotencyCheckDBError_Returns(t *testing.T) {
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND partner_id = $2 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $3`)).
-		WithArgs("user-2", "partner-1", 1).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $2`)).
+		WithArgs("user-2", 1).
 		WillReturnError(errDB)
 
 	mock.ExpectRollback()
@@ -316,7 +315,7 @@ func TestLinkReferral_IdempotencyCheckDBError_Returns(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestLinkReferral_DifferentPartner_ClosesOld(t *testing.T) {
+func TestLinkReferral_DifferentPartnerActive_ReturnsError(t *testing.T) {
 	gormDB, mock := newTestDB(t)
 
 	links := &ReferralLinkRepo{
@@ -340,25 +339,18 @@ func TestLinkReferral_DifferentPartner_ClosesOld(t *testing.T) {
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND partner_id = $2 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $3`)).
-		WithArgs("user-2", "partner-2", 1).
-		WillReturnError(gorm.ErrRecordNotFound)
+	existingRows := sqlmock.NewRows([]string{"id", "partner_id", "referred_user_id", "referral_link_id", "status"}).
+		AddRow("ref-existing", "partner-1", "user-2", "link-1", "registered")
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "referrals" WHERE (referred_user_id = $1 AND ended_at IS NULL) AND "referrals"."deleted_at" IS NULL ORDER BY "referrals"."id" LIMIT $2`)).
+		WithArgs("user-2", 1).
+		WillReturnRows(existingRows)
 
-	mock.ExpectExec(regexp.QuoteMeta(`UPDATE "referrals" SET`)).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	mock.ExpectExec(regexp.QuoteMeta(`INSERT INTO "referrals"`)).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT count(*) FROM "referrals"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
-
-	mock.ExpectCommit()
+	mock.ExpectRollback()
 
 	handler := commands.LinkReferralHandler{DB: gormDB, Links: links}
 	err := handler.Handle("user-2", "NEWCODE")
 
-	assert.NoError(t, err)
+	assert.ErrorIs(t, err, domain.ErrActiveReferralExists)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

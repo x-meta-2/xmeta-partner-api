@@ -39,9 +39,12 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 		}
 
 		var existing database.Referral
-		err := tx.Where("referred_user_id = ? AND partner_id = ? AND ended_at IS NULL", userID, link.PartnerID).
+		err := tx.Where("referred_user_id = ? AND ended_at IS NULL", userID).
 			First(&existing).Error
 		if err == nil {
+			if existing.PartnerID != link.PartnerID {
+				return domain.ErrActiveReferralExists
+			}
 			if existing.ReferralLinkID != nil && *existing.ReferralLinkID != link.ID {
 				return tx.Model(&existing).UpdateColumn("referral_link_id", link.ID).Error
 			}
@@ -52,15 +55,6 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 		}
 
 		now := time.Now()
-
-		if err := tx.Model(&database.Referral{}).
-			Where("referred_user_id = ? AND ended_at IS NULL", userID).
-			Updates(map[string]any{
-				"ended_at": now,
-				"status":   database.ReferralStatusUnlinked,
-			}).Error; err != nil {
-			return err
-		}
 
 		referral := database.Referral{
 			PartnerID:      link.PartnerID,

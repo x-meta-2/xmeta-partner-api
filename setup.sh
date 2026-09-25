@@ -47,6 +47,7 @@ REQUIRED_VARS=(
     "PARTNER_COGNITO_CLIENT_ID"
     "INTERNAL_API_KEY"
     "ALLOWED_ORIGINS"
+    "FUTURES_FEE_RATE"
 )
 
 echo "🔍 Validating environment variables..."

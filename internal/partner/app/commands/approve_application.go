@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -77,7 +76,7 @@ func (h *ApproveApplicationHandler) Handle(applicationID string, adminID string)
 		defaultLink := database.ReferralLink{
 			PartnerID: partner.ID,
 			Code:      referralCode,
-			URL:       fmt.Sprintf("https://x-meta.com/?ref=%s", referralCode),
+			URL:       utils.BuildReferralURL(referralCode),
 			IsActive:  true,
 		}
 		return tx.Create(&defaultLink).Error

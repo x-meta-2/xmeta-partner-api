@@ -21,6 +21,7 @@ Written in Go (Gin + GORM), backed by PostgreSQL, fronted by xmeta-partner-web. 
 ```
 .
 ├── cmd/payout-worker/      # Daily cron — aggregates pending commissions into payouts
+├── cmd/futures-commission-sync/ # Daily cron — syncs futures closed positions into commissions
 ├── controllers/            # HTTP handlers, grouped by audience
 │   ├── admin/              # Admin back-office endpoints (Bearer + RBAC)
 │   ├── partner/            # Partner self-service (Bearer)
@@ -142,9 +143,41 @@ go run ./cmd/payout-worker
 
 The worker is idempotent — already-attributed commissions are skipped via the `payout_id IS NULL` filter.
 
+## Futures commission sync
+
+`cmd/futures-commission-sync/main.go` is a separate one-off binary that reads `futures_closed_positions` from the shared admin database and creates pending partner commission rows.
+
+Commission formula:
+
+```text
+fee = close_notional * FUTURES_FEE_RATE
+partner_rebate = fee * partner_tier.commission_rate
+```
+
+Default production command:
+
+```bash
+docker compose --profile jobs run --rm futures-commission-sync
+```
+
+The default run scans the last `FUTURES_SYNC_LOOKBACK_DAYS` closed days and skips duplicates via the unique `commissions.position_id` key.
+
+Manual backfill:
+
+```bash
+FUTURES_SYNC_STARTED_AT=2026-09-01 FUTURES_SYNC_ENDED_AT=2026-09-24 \
+  docker compose --profile jobs run --rm futures-commission-sync
+```
+
+Install the daily cron. It runs once per day at 08:00 UTC+8:
+
+```bash
+./scripts/install-futures-sync-cron.sh
+```
+
 ## Internal events contract
 
-xmeta-monorepo posts to `/api/v1/internal/*` whenever a domain event happens that affects partner commissions. All requests must carry header:
+xmeta-monorepo posts to `/api/v1/internal/*` for referral lookups, referral linking, and unlink requests. All requests must carry header:
 
 ```
 X-Internal-API-Key: <INTERNAL_API_KEY from .env>
@@ -156,21 +189,6 @@ curl -X POST http://partner-api:8080/api/v1/internal/link-referral \
   -H "X-Internal-API-Key: $INTERNAL_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"userId":"abc-123","referralCode":"AB12CDE"}'
-```
-
-Example — a trade fires:
-```bash
-curl -X POST http://partner-api:8080/api/v1/internal/trade-event \
-  -H "X-Internal-API-Key: $INTERNAL_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tradeId":"trade-xyz",
-    "userId":"abc-123",
-    "tradeAmount":1000.0,
-    "tradeFee":1.0,
-    "symbol":"BTCUSDT",
-    "tradeTimestamp":1714521600
-  }'
 ```
 
 ## Build & deploy
@@ -192,6 +210,7 @@ Brings up `app`, `postgres`, `minio`, `nginx`. Nginx terminates TLS and reverse-
 - [ ] `DB_AUTO_MIGRATE=false` on prod (apply migrations explicitly)
 - [ ] `ALLOWED_ORIGINS` whitelisted to actual partner-portal + admin domains
 - [ ] Cognito pools configured with the right callback URLs
+- [ ] Futures commission sync scheduled at 08:00 UTC+8
 - [ ] Payout worker scheduled (CronJob, EventBridge, etc.)
 - [ ] Logs shipped to CloudWatch / Sentry to catch `log.Printf` errors
 

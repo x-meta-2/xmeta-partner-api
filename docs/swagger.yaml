@@ -1,29 +1,5 @@
 basePath: /api/v1
 definitions:
-  admin.ImportError:
-    properties:
-      message:
-        type: string
-      row:
-        type: integer
-      userId:
-        type: string
-    type: object
-  admin.ImportResult:
-    properties:
-      errors:
-        items:
-          $ref: '#/definitions/admin.ImportError'
-        type: array
-      failed:
-        type: integer
-      skipped:
-        type: integer
-      success:
-        type: integer
-      total:
-        type: integer
-    type: object
   database.AdminGroup:
     properties:
       createdAt:
@@ -249,6 +225,42 @@ definitions:
     - PayoutStatusProcessing
     - PayoutStatusCompleted
     - PayoutStatusFailed
+  database.Referral:
+    properties:
+      createdAt:
+        type: string
+      endedAt:
+        type: string
+      firstTradeAt:
+        type: string
+      id:
+        type: string
+      partner:
+        $ref: '#/definitions/database.Partner'
+      partnerId:
+        type: string
+      referralLink:
+        allOf:
+        - $ref: '#/definitions/database.ReferralLink'
+        description: |-
+          Preloaded by admin endpoints so the UI can show which exact code
+          (primary vs custom) the user signed up through, instead of
+          always falling back to the partner's primary referral_code.
+      referralLinkId:
+        type: string
+      referredUser:
+        $ref: '#/definitions/database.User'
+      referredUserId:
+        type: string
+      registeredAt:
+        type: string
+      startedAt:
+        type: string
+      status:
+        $ref: '#/definitions/database.ReferralStatus'
+      updatedAt:
+        type: string
+    type: object
   database.ReferralLink:
     properties:
       clicks:
@@ -284,6 +296,51 @@ definitions:
     - ReferralStatusActive
     - ReferralStatusInactive
     - ReferralStatusUnlinked
+  database.ReferralUnlinkRequest:
+    properties:
+      adminNote:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      partner:
+        $ref: '#/definitions/database.Partner'
+      partnerId:
+        type: string
+      reason:
+        type: string
+      referral:
+        $ref: '#/definitions/database.Referral'
+      referralCode:
+        type: string
+      referralId:
+        type: string
+      referredUser:
+        $ref: '#/definitions/database.User'
+      referredUserId:
+        type: string
+      reviewedAt:
+        type: string
+      reviewedBy:
+        type: string
+      reviewer:
+        $ref: '#/definitions/database.AdminUser'
+      status:
+        $ref: '#/definitions/database.ReferralUnlinkRequestStatus'
+      updatedAt:
+        type: string
+    type: object
+  database.ReferralUnlinkRequestStatus:
+    enum:
+    - pending
+    - approved
+    - rejected
+    type: string
+    x-enum-varnames:
+    - ReferralUnlinkRequestStatusPending
+    - ReferralUnlinkRequestStatusApproved
+    - ReferralUnlinkRequestStatusRejected
   database.User:
     properties:
       binanceEmail:
@@ -499,6 +556,18 @@ definitions:
       status_code:
         type: integer
     type: object
+  structs.FuturesClosedPositionSyncParams:
+    properties:
+      endedAt:
+        type: string
+      limit:
+        type: integer
+      startedAt:
+        type: string
+    required:
+    - endedAt
+    - startedAt
+    type: object
   structs.PaginationInput:
     properties:
       current:
@@ -658,6 +727,46 @@ definitions:
       status:
         type: string
     type: object
+  structs.ReferralUnlinkRequestCreateParams:
+    properties:
+      reason:
+        maxLength: 1000
+        minLength: 3
+        type: string
+      userId:
+        type: string
+    required:
+    - reason
+    - userId
+    type: object
+  structs.ReferralUnlinkRequestListParams:
+    properties:
+      current:
+        type: integer
+      export:
+        type: boolean
+      limit:
+        description: alias for PageSize
+        type: integer
+      page:
+        description: alias for Current
+        type: integer
+      pageSize:
+        type: integer
+      partnerId:
+        type: string
+      query:
+        type: string
+      sortDate:
+        $ref: '#/definitions/structs.SortDate'
+      status:
+        type: string
+    type: object
+  structs.ReferralUnlinkRequestReviewParams:
+    properties:
+      adminNote:
+        type: string
+    type: object
   structs.ResponseBody:
     properties:
       body: {}
@@ -717,28 +826,6 @@ definitions:
         type: number
       name:
         type: string
-    type: object
-  structs.TradeEventParams:
-    properties:
-      accountId:
-        type: string
-      commissionAmount:
-        type: string
-      commissionAsset:
-        type: string
-      createdAt:
-        type: string
-      marketId:
-        type: string
-      positionId:
-        type: string
-      userId:
-        type: string
-      volumeInUSD:
-        type: string
-    required:
-    - positionId
-    - userId
     type: object
   structs.UnlinkReferralEventParams:
     properties:
@@ -1084,36 +1171,6 @@ paths:
       summary: List partner applications
       tags:
       - Admin Applications
-  /admin/partner/commissions/import:
-    post:
-      consumes:
-      - application/json
-      description: Accepts an array of trade events (from Excel upload) and processes
-        each through the commission engine
-      parameters:
-      - description: Array of trade events
-        in: body
-        name: request
-        required: true
-        schema:
-          items:
-            $ref: '#/definitions/structs.TradeEventParams'
-          type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/structs.ResponseBody'
-            - properties:
-                body:
-                  $ref: '#/definitions/admin.ImportResult'
-              type: object
-      summary: Batch import trade events
-      tags:
-      - Admin Commissions
   /admin/partner/commissions/list:
     post:
       consumes:
@@ -1139,6 +1196,29 @@ paths:
                   $ref: '#/definitions/structs.PaginationResponse'
               type: object
       summary: List all commissions (admin)
+      tags:
+      - Admin Commissions
+  /admin/partner/commissions/sync-futures-commissions:
+    post:
+      consumes:
+      - application/json
+      description: Reads futures_closed_positions directly and creates pending partner
+        commissions for the matching referral window
+      parameters:
+      - description: Closed position sync range
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.FuturesClosedPositionSyncParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/structs.ResponseBody'
+      summary: Sync futures closed positions into partner commissions
       tags:
       - Admin Commissions
   /admin/partner/config/tiers:
@@ -1725,6 +1805,142 @@ paths:
       summary: List pending payouts
       tags:
       - Admin Payouts
+  /admin/partner/referral-unlink-requests/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves a pending request and unlinks the user from their active
+        partner.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Review note
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralUnlinkRequestReviewParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.ReferralUnlinkRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve referral unlink request
+      tags:
+      - Admin Referral Unlink Requests
+  /admin/partner/referral-unlink-requests/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects a pending request and keeps the user's partner relationship
+        active.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Review note
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralUnlinkRequestReviewParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.ReferralUnlinkRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject referral unlink request
+      tags:
+      - Admin Referral Unlink Requests
+  /admin/partner/referral-unlink-requests/list:
+    post:
+      consumes:
+      - application/json
+      description: Returns paginated user requests to stop following their current
+        partner.
+      parameters:
+      - description: Filters and pagination
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralUnlinkRequestListParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/structs.PaginationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List referral unlink requests
+      tags:
+      - Admin Referral Unlink Requests
   /admin/partner/referrals/detail/{id}:
     get:
       consumes:
@@ -1887,6 +2103,49 @@ paths:
       summary: Validate a referral code
       tags:
       - System Events
+  /internal/referral-unlink-requests:
+    post:
+      consumes:
+      - application/json
+      description: Internal-only endpoint used by account-service when a logged-in
+        user asks to stop following their current partner. This only creates a pending
+        request; admin approval performs the actual unlink.
+      parameters:
+      - description: Unlink request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/structs.ReferralUnlinkRequestCreateParams'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/structs.ResponseBody'
+            - properties:
+                body:
+                  $ref: '#/definitions/database.ReferralUnlinkRequest'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/structs.ErrorResponse'
+      security:
+      - InternalKey: []
+      summary: Create a user unlink request
+      tags:
+      - System Events
   /internal/referrals/check-user:
     post:
       consumes:
@@ -1930,30 +2189,23 @@ paths:
       summary: Check an active partner's direct referral
       tags:
       - System Events
-  /internal/trade-event:
-    post:
-      consumes:
-      - application/json
-      description: Ingests a trade event from monorepo and runs the commission engine
+  /internal/referrals/current/{userId}:
+    get:
+      description: Internal-only lookup. Returns the user's active partner referral
+        or null when the user is not currently linked to a partner.
       parameters:
-      - description: Trade event payload
-        in: body
-        name: request
+      - description: Cognito user ID
+        in: path
+        name: userId
         required: true
-        schema:
-          $ref: '#/definitions/structs.TradeEventParams'
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/structs.ResponseBody'
-            - properties:
-                body:
-                  $ref: '#/definitions/structs.SuccessResponse'
-              type: object
+            $ref: '#/definitions/structs.ResponseBody'
         "400":
           description: Bad Request
           schema:
@@ -1968,7 +2220,7 @@ paths:
             $ref: '#/definitions/structs.ErrorResponse'
       security:
       - InternalKey: []
-      summary: Process a trade event
+      summary: Get a user's current partner referral
       tags:
       - System Events
   /internal/unlink-referral:

@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"net/http"
 
 	"xmeta-partner/controllers/common"
@@ -27,7 +26,7 @@ func (co CommissionController) Register(router *gin.RouterGroup) {
 
 	manage := router.Use(middlewares.AdminAuth(co.DB), middlewares.HasPermission("manage_partner_commissions"))
 	{
-		manage.POST("/import", co.Import)
+		manage.POST("/sync-futures-commissions", co.SyncFuturesCommissions)
 	}
 }
 
@@ -58,73 +57,28 @@ func (co CommissionController) List(c *gin.Context) {
 	co.SetBody(c, result)
 }
 
-type ImportResult struct {
-	Total   int           `json:"total"`
-	Success int           `json:"success"`
-	Skipped int           `json:"skipped"`
-	Failed  int           `json:"failed"`
-	Errors  []ImportError `json:"errors"`
-}
-
-type ImportError struct {
-	Row     int    `json:"row"`
-	UserID  string `json:"userId"`
-	Message string `json:"message"`
-}
-
-// Import
-// @Summary       Batch import trade events
-// @Description   Accepts an array of trade events (from Excel upload) and processes each through the commission engine
+// SyncFuturesCommissions
+// @Summary       Sync futures closed positions into partner commissions
+// @Description   Reads futures_closed_positions directly and creates pending partner commissions for the matching referral window
 // @Tags          Admin Commissions
 // @Accept        json
 // @Produce       json
-// @Param         request body []structs.TradeEventParams true "Array of trade events"
-// @Success       200 {object} structs.ResponseBody{body=ImportResult}
-// @Router        /admin/partner/commissions/import [post]
-func (co CommissionController) Import(c *gin.Context) {
+// @Param         request body structs.FuturesClosedPositionSyncParams true "Closed position sync range"
+// @Success       200 {object} structs.ResponseBody
+// @Router        /admin/partner/commissions/sync-futures-commissions [post]
+func (co CommissionController) SyncFuturesCommissions(c *gin.Context) {
 	defer func() { c.JSON(co.GetBody(c)) }()
 
-	var events []structs.TradeEventParams
-	if err := c.ShouldBindJSON(&events); err != nil {
+	var params structs.FuturesClosedPositionSyncParams
+	if err := c.ShouldBindJSON(&params); err != nil {
 		co.SetError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if len(events) == 0 {
-		co.SetError(c, http.StatusBadRequest, "empty event list")
+	result, err := co.Service.Commands.SyncFuturesClosedPositions.Handle(params)
+	if err != nil {
+		co.SetError(c, http.StatusBadRequest, err.Error())
 		return
-	}
-
-	result := ImportResult{Total: len(events)}
-
-	for i, event := range events {
-		if event.UserID == "" || event.PositionID == "" {
-			result.Failed++
-			result.Errors = append(result.Errors, ImportError{
-				Row:     i + 1,
-				UserID:  event.UserID,
-				Message: "userId and positionId are required",
-			})
-			continue
-		}
-
-		res, err := co.Service.Commands.ProcessTradeEvent.Handle(event)
-		if err != nil {
-			result.Failed++
-			result.Errors = append(result.Errors, ImportError{
-				Row:     i + 1,
-				UserID:  event.UserID,
-				Message: fmt.Sprintf("%v", err),
-			})
-			continue
-		}
-
-		if res.Skipped {
-			result.Skipped++
-			continue
-		}
-
-		result.Success++
 	}
 
 	co.SetBody(c, result)

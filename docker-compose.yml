@@ -45,10 +45,58 @@ services:
       # AWS Cognito (partner pool — used by /partner/* endpoints)
       PARTNER_COGNITO_USER_POOL_ID: ${PARTNER_COGNITO_USER_POOL_ID}
       PARTNER_COGNITO_CLIENT_ID: ${PARTNER_COGNITO_CLIENT_ID}
+      PARTNER_COGNITO_ALLOWED_CLIENT_IDS: ${PARTNER_COGNITO_ALLOWED_CLIENT_IDS:-}
       # Internal API key (xmeta-monorepo → partner-api events)
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # Generated referral links
+      REFERRAL_BASE_URL: ${REFERRAL_BASE_URL:-https://x-meta.com/mn/register}
+      # Futures commission sync
+      FUTURES_FEE_RATE: ${FUTURES_FEE_RATE}
       # CORS — partner-portal + admin-portal origins
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    networks:
+      - partner_network
+
+  # ==========================================
+  # One-off futures commission sync job
+  # Run with:
+  #   docker compose run --rm futures-commission-sync
+  # Optional backfill:
+  #   FUTURES_SYNC_STARTED_AT=2026-09-01 FUTURES_SYNC_ENDED_AT=2026-09-24 docker compose run --rm futures-commission-sync
+  # ==========================================
+  futures-commission-sync:
+    image: ${DOCKER_IMAGE:-xmeta-partner-api-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./futures-commission-sync"]
+    profiles:
+      - jobs
+    environment:
+      GIN_MODE: release
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_TIMEZONE: Asia/Ulaanbaatar
+      DB_AUTO_MIGRATE: "false"
+      DB_RUN_MIGRATIONS: "false"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+      PARTNER_COGNITO_USER_POOL_ID: ${PARTNER_COGNITO_USER_POOL_ID}
+      PARTNER_COGNITO_CLIENT_ID: ${PARTNER_COGNITO_CLIENT_ID}
+      PARTNER_COGNITO_ALLOWED_CLIENT_IDS: ${PARTNER_COGNITO_ALLOWED_CLIENT_IDS:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      REFERRAL_BASE_URL: ${REFERRAL_BASE_URL:-https://x-meta.com/mn/register}
+      FUTURES_FEE_RATE: ${FUTURES_FEE_RATE}
+      FUTURES_SYNC_STARTED_AT: ${FUTURES_SYNC_STARTED_AT:-}
+      FUTURES_SYNC_ENDED_AT: ${FUTURES_SYNC_ENDED_AT:-}
+      FUTURES_SYNC_LOOKBACK_DAYS: ${FUTURES_SYNC_LOOKBACK_DAYS:-3}
+      FUTURES_SYNC_LIMIT: ${FUTURES_SYNC_LIMIT:-10000}
     networks:
       - partner_network
 

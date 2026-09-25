@@ -6,6 +6,7 @@ var (
 	ErrLinkNotFound          = errors.New("referral link not found")
 	ErrPartnerNotActive      = errors.New("referral code is not active")
 	ErrSelfReferral          = errors.New("cannot link to your own referral code")
+	ErrActiveReferralExists  = errors.New("user is already linked to an active partner")
 	ErrNoActiveReferral      = errors.New("no active referral to unlink")
 	ErrMaxLinksReached       = errors.New("maximum referral links per partner reached")
 	ErrCodeTaken             = errors.New("referral code is already in use")

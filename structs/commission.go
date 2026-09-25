@@ -32,6 +32,12 @@ type TradeEventParams struct {
 	CreatedAt        string `json:"createdAt"`
 }
 
+type FuturesClosedPositionSyncParams struct {
+	StartedAt string `json:"startedAt" binding:"required"`
+	EndedAt   string `json:"endedAt" binding:"required"`
+	Limit     int    `json:"limit"`
+}
+
 // UserRegisteredParams — body of `POST /internal/link-referral`. Only
 // the two fields needed to attach a referral are accepted; identity and
 // device metadata stay on the user/audit tables in xmeta-monorepo.
@@ -47,4 +53,3 @@ type UserRegisteredParams struct {
 type UnlinkReferralEventParams struct {
 	UserID string `json:"userId" binding:"required"`
 }
-

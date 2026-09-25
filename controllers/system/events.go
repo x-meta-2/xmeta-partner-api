@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"xmeta-partner/controllers/common"
-	internalCommission "xmeta-partner/internal/commission"
-	commissionDomain "xmeta-partner/internal/commission/domain"
 	internalReferral "xmeta-partner/internal/referral"
 	"xmeta-partner/internal/referral/domain"
 	"xmeta-partner/middlewares"
@@ -17,17 +15,14 @@ import (
 
 type EventsController struct {
 	common.Controller
-	CommissionService *internalCommission.Service
-	ReferralService   *internalReferral.Service
+	ReferralService *internalReferral.Service
 }
 
 func (co EventsController) Register(router *gin.RouterGroup) {
-	co.CommissionService = internalCommission.NewService(co.DB)
 	co.ReferralService = internalReferral.NewService(co.DB)
 
 	r := router.Use(middlewares.InternalAuth())
 	{
-		r.POST("/trade-event", co.TradeEvent)
 		r.GET("/referral-links/:code", co.LookupReferralLink)
 		r.POST("/link-referral", co.LinkReferral)
 		r.POST("/unlink-referral", co.UnlinkReferral)
@@ -35,42 +30,6 @@ func (co EventsController) Register(router *gin.RouterGroup) {
 		r.POST("/referral-unlink-requests", co.CreateUnlinkRequest)
 		r.POST("/referrals/check-user", co.CheckDirectReferral)
 	}
-}
-
-// TradeEvent
-// @Summary       Process a trade event
-// @Description   Ingests a trade event from monorepo and runs the commission engine
-// @Tags          System Events
-// @Accept        json
-// @Produce       json
-// @Param         request body structs.TradeEventParams true "Trade event payload"
-// @Success       200 {object} structs.ResponseBody{body=structs.SuccessResponse}
-// @Failure       400 {object} structs.ErrorResponse
-// @Failure       401 {object} structs.ErrorResponse
-// @Failure       500 {object} structs.ErrorResponse
-// @Security      InternalKey
-// @Router        /internal/trade-event [post]
-func (co EventsController) TradeEvent(c *gin.Context) {
-	defer func() { c.JSON(co.GetBody(c)) }()
-
-	var params structs.TradeEventParams
-	if err := c.ShouldBindJSON(&params); err != nil {
-		co.SetError(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	_, err := co.CommissionService.Commands.ProcessTradeEvent.Handle(params)
-	if err != nil {
-		switch {
-		case errors.Is(err, commissionDomain.ErrInvalidTradeDate):
-			co.SetError(c, http.StatusBadRequest, err.Error())
-		default:
-			co.SetError(c, http.StatusInternalServerError, err.Error())
-		}
-		return
-	}
-
-	co.SetBody(c, structs.SuccessResponse{Success: true})
 }
 
 // LookupReferralLink
@@ -131,7 +90,8 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 		case errors.Is(err, domain.ErrLinkNotFound):
 			co.SetError(c, http.StatusNotFound, err.Error())
 		case errors.Is(err, domain.ErrPartnerNotActive),
-			errors.Is(err, domain.ErrSelfReferral):
+			errors.Is(err, domain.ErrSelfReferral),
+			errors.Is(err, domain.ErrActiveReferralExists):
 			co.SetError(c, http.StatusBadRequest, err.Error())
 		default:
 			co.SetError(c, http.StatusInternalServerError, err.Error())
