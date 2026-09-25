@@ -6,7 +6,6 @@ import (
 
 	"xmeta-partner/database"
 	"xmeta-partner/internal/payout/app/commands"
-	"xmeta-partner/internal/payout/app/queries"
 	"xmeta-partner/internal/payout/domain"
 	"xmeta-partner/structs"
 
@@ -32,10 +31,6 @@ func TestPayoutStatus_MatchesDatabase(t *testing.T) {
 
 func TestErrPayoutNotFound(t *testing.T) {
 	assert.EqualError(t, domain.ErrPayoutNotFound, "payout not found or already processed")
-}
-
-func TestMinPayoutAmount(t *testing.T) {
-	assert.Equal(t, 10.0, queries.MinPayoutAmount)
 }
 
 func TestPayoutReviewParams(t *testing.T) {

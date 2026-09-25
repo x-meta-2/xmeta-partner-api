@@ -7,14 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-const MinPayoutAmount = 10.0
-
 type PendingCommissionsHandler struct {
 	DB *gorm.DB
 }
 
 func (h *PendingCommissionsHandler) Handle(partnerID string) (*dto.PendingInfo, error) {
-	info := &dto.PendingInfo{MinPayoutAmount: MinPayoutAmount}
+	info := &dto.PendingInfo{}
 
 	var pending struct {
 		Amount float64

@@ -87,19 +87,22 @@ func (r *GormTradeEventRepo) ActivateReferral(referralID string, firstTradeAt ti
 		}).Error
 }
 
-func (r *GormTradeEventRepo) GetPartnerTotalVolume(partnerID string) (float64, error) {
+func (r *GormTradeEventRepo) GetPartnerTotalVolume(partnerID string, startedAt time.Time, endedAt time.Time) (float64, error) {
 	var total float64
 	err := r.DB.Model(&database.Commission{}).
 		Where("partner_id = ?", partnerID).
+		Where("trade_date >= ? AND trade_date < ?", startedAt, endedAt).
 		Select("COALESCE(SUM(volume_usd), 0)").
 		Scan(&total).Error
 	return total, err
 }
 
-func (r *GormTradeEventRepo) GetPartnerActiveClients(partnerID string) (int64, error) {
+func (r *GormTradeEventRepo) GetPartnerActiveClients(partnerID string, startedAt time.Time, endedAt time.Time) (int64, error) {
 	var count int64
-	err := r.DB.Model(&database.Referral{}).
-		Where("partner_id = ? AND status = ? AND ended_at IS NULL", partnerID, database.ReferralStatusActive).
+	err := r.DB.Model(&database.Commission{}).
+		Where("partner_id = ?", partnerID).
+		Where("trade_date >= ? AND trade_date < ?", startedAt, endedAt).
+		Distinct("referred_user_id").
 		Count(&count).Error
 	return count, err
 }

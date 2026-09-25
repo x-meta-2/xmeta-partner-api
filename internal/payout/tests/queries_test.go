@@ -135,11 +135,11 @@ func TestAdminListPayouts_FilterByPartner(t *testing.T) {
 func TestPayoutDetail_Success(t *testing.T) {
 	now := time.Now()
 	payout := &database.Payout{
-		Base:      database.Base{ID: "p-1"},
-		PartnerID: "partner-1",
-		Amount:    50.5,
-		Currency:  "USDT",
-		Status:    database.PayoutStatusPending,
+		Base:        database.Base{ID: "p-1"},
+		PartnerID:   "partner-1",
+		Amount:      50.5,
+		Currency:    "USDT",
+		Status:      database.PayoutStatusPending,
 		PeriodStart: now,
 		PeriodEnd:   now,
 	}
@@ -252,13 +252,6 @@ func TestAdminPayoutDetail_NotFound(t *testing.T) {
 
 	assert.ErrorIs(t, err, errDB)
 	assert.Nil(t, result)
-}
-
-// ── DTO ──
-
-func TestPendingInfo_MinPayoutAmount(t *testing.T) {
-	info := queries.MinPayoutAmount
-	assert.Equal(t, 10.0, info)
 }
 
 func TestPayoutListParams_Filters(t *testing.T) {

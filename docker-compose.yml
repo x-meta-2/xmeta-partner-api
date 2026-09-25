@@ -101,6 +101,43 @@ services:
       - partner_network
 
   # ==========================================
+  # Monthly tier review job
+  # Run with:
+  #   docker compose --profile jobs run --rm monthly-tier-review
+  # ==========================================
+  monthly-tier-review:
+    image: ${DOCKER_IMAGE:-xmeta-partner-api-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./monthly-tier-review"]
+    profiles:
+      - jobs
+    environment:
+      GIN_MODE: release
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_TIMEZONE: Asia/Ulaanbaatar
+      DB_AUTO_MIGRATE: "false"
+      DB_RUN_MIGRATIONS: "false"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+      PARTNER_COGNITO_USER_POOL_ID: ${PARTNER_COGNITO_USER_POOL_ID}
+      PARTNER_COGNITO_CLIENT_ID: ${PARTNER_COGNITO_CLIENT_ID}
+      PARTNER_COGNITO_ALLOWED_CLIENT_IDS: ${PARTNER_COGNITO_ALLOWED_CLIENT_IDS:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      REFERRAL_BASE_URL: ${REFERRAL_BASE_URL:-https://x-meta.com/mn/register}
+      FUTURES_FEE_RATE: ${FUTURES_FEE_RATE}
+    networks:
+      - partner_network
+
+  # ==========================================
   # Nginx Gateway (HTTP/HTTPS termination)
   # ==========================================
   nginx:

@@ -20,8 +20,8 @@ Written in Go (Gin + GORM), backed by PostgreSQL, fronted by xmeta-partner-web. 
 
 ```
 .
-├── cmd/payout-worker/      # Daily cron — aggregates pending commissions into payouts
 ├── cmd/futures-commission-sync/ # Daily cron — syncs futures closed positions into commissions
+├── cmd/monthly-tier-review/ # Monthly cron — reviews previous-month tier assignment
 ├── controllers/            # HTTP handlers, grouped by audience
 │   ├── admin/              # Admin back-office endpoints (Bearer + RBAC)
 │   ├── partner/            # Partner self-service (Bearer)
@@ -133,16 +133,6 @@ To add a new migration:
 3. Boot once, verify, deploy
 4. Once rolled out everywhere, comment the call (keep the helper as record)
 
-## Payout worker
-
-`cmd/payout-worker/main.go` is a separate binary that aggregates each partner's pending commissions into a payout record. Run nightly (cron / Kubernetes CronJob / Lambda):
-
-```bash
-go run ./cmd/payout-worker
-```
-
-The worker is idempotent — already-attributed commissions are skipped via the `payout_id IS NULL` filter.
-
 ## Futures commission sync
 
 `cmd/futures-commission-sync/main.go` is a separate one-off binary that reads `futures_closed_positions` from the shared admin database and creates pending partner commission rows.
@@ -153,6 +143,18 @@ Commission formula:
 fee = close_notional * FUTURES_FEE_RATE
 partner_rebate = fee * partner_tier.commission_rate
 ```
+
+Both calculated amounts are rounded down to 4 decimal places before being
+stored.
+
+Tier rules:
+
+- Real-time upgrade uses the current Asia/Ulaanbaatar calendar month's
+  commission metrics only.
+- Monthly downgrade/reassignment runs on day 1 using the previous calendar
+  month's metrics.
+- Monthly active clients are counted as distinct referred users with at least
+  one commission in that month.
 
 Default production command:
 
@@ -169,11 +171,14 @@ FUTURES_SYNC_STARTED_AT=2026-09-01 FUTURES_SYNC_ENDED_AT=2026-09-24 \
   docker compose --profile jobs run --rm futures-commission-sync
 ```
 
-Install the daily cron. It runs once per day at 08:00 UTC+8:
+Install the cron jobs:
 
 ```bash
 ./scripts/install-futures-sync-cron.sh
 ```
+
+The script installs a daily futures commission sync at `08:00 UTC+8` and a
+monthly tier review on day 1 at `08:30 UTC+8`.
 
 ## Internal events contract
 

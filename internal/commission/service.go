@@ -16,6 +16,7 @@ type Service struct {
 type Commands struct {
 	ProcessTradeEvent          *commands.ProcessTradeEventHandler
 	SyncFuturesClosedPositions *commands.SyncFuturesClosedPositionsHandler
+	MonthlyTierReview          *commands.MonthlyTierReviewHandler
 }
 
 type Queries struct {
@@ -33,6 +34,7 @@ func NewService(db *gorm.DB) *Service {
 		Commands: Commands{
 			ProcessTradeEvent:          &commands.ProcessTradeEventHandler{Repo: tradeEventRepo},
 			SyncFuturesClosedPositions: &commands.SyncFuturesClosedPositionsHandler{DB: db, Repo: tradeEventRepo},
+			MonthlyTierReview:          &commands.MonthlyTierReviewHandler{DB: db},
 		},
 		Queries: Queries{
 			ListCommissions:      &queries.ListCommissionsHandler{Commissions: commissionRepo},

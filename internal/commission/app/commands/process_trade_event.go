@@ -12,8 +12,8 @@ import (
 	"xmeta-partner/structs"
 )
 
-func truncate8(v float64) float64 {
-	return math.Round(v*1e8) / 1e8
+func truncate4(v float64) float64 {
+	return math.Floor(v*1e4) / 1e4
 }
 
 type TradeEventResult struct {
@@ -31,6 +31,7 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 	if err != nil || tradeFee <= 0 {
 		return TradeEventResult{Skipped: true, Reason: "zero or invalid fee"}, nil
 	}
+	tradeFee = truncate4(tradeFee)
 
 	tradeDate := time.Now()
 	if params.CreatedAt != "" {
@@ -79,7 +80,7 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 	}
 
 	commissionRate := partner.Tier.CommissionRate
-	rebateAmount := truncate8(tradeFee * commissionRate)
+	rebateAmount := truncate4(tradeFee * commissionRate)
 
 	var volumeUSD float64
 	if v, err := strconv.ParseFloat(params.VolumeInUSD, 64); err == nil {
@@ -113,7 +114,7 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 				return err
 			}
 		}
-		return h.maybeUpgradeTier(txRepo, partner)
+		return maybeUpgradeTierForTrade(txRepo, partner, tradeDate)
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrDuplicatePosition) {
@@ -123,37 +124,4 @@ func (h *ProcessTradeEventHandler) Handle(params structs.TradeEventParams) (Trad
 	}
 
 	return TradeEventResult{Created: true}, nil
-}
-
-func (h *ProcessTradeEventHandler) maybeUpgradeTier(txRepo port.TradeEventRepo, partner *database.Partner) error {
-	totalVolume, err := txRepo.GetPartnerTotalVolume(partner.ID)
-	if err != nil {
-		return err
-	}
-
-	activeClients, err := txRepo.GetPartnerActiveClients(partner.ID)
-	if err != nil {
-		return err
-	}
-
-	tiers, err := txRepo.FindAllTiersAsc()
-	if err != nil {
-		return err
-	}
-
-	var bestTier *database.PartnerTier
-	for i := range tiers {
-		t := &tiers[i]
-		volumeOK := t.MinVolume == 0 || totalVolume >= t.MinVolume
-		clientsOK := t.MinActiveClients == 0 || activeClients >= int64(t.MinActiveClients)
-		if volumeOK && clientsOK {
-			bestTier = t
-		}
-	}
-
-	if bestTier != nil && bestTier.Level > partner.Tier.Level {
-		return txRepo.UpgradePartnerTier(partner.ID, bestTier.ID, bestTier.Level)
-	}
-
-	return nil
 }

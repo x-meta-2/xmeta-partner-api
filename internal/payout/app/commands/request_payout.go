@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"xmeta-partner/database"
-	"xmeta-partner/internal/payout/app/queries"
 
 	"gorm.io/gorm"
 )
@@ -61,10 +60,6 @@ func (h *RequestPayoutHandler) Handle(partnerID string) (*database.Payout, error
 			Select("COALESCE(SUM(rebate_amount), 0) as amount, COUNT(*) as count").
 			Scan(&pending).Error; err != nil {
 			return err
-		}
-
-		if pending.Amount < queries.MinPayoutAmount {
-			return fmt.Errorf("minimum payout amount is $%.0f", queries.MinPayoutAmount)
 		}
 
 		now := time.Now()

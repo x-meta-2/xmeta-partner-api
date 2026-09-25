@@ -20,8 +20,8 @@ COPY . .
 RUN go mod tidy
 RUN swag init --parseDependency --parseInternal
 RUN CGO_ENABLED=0 GOOS=linux go build -a -gcflags='-N -l' -installsuffix cgo -o main .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -gcflags='-N -l' -installsuffix cgo -o payout-worker ./cmd/payout-worker
 RUN CGO_ENABLED=0 GOOS=linux go build -a -gcflags='-N -l' -installsuffix cgo -o futures-commission-sync ./cmd/futures-commission-sync
+RUN CGO_ENABLED=0 GOOS=linux go build -a -gcflags='-N -l' -installsuffix cgo -o monthly-tier-review ./cmd/monthly-tier-review
 # Stage 2: Runtime
 FROM alpine:latest
 
@@ -32,8 +32,8 @@ RUN apk add --no-cache tzdata ca-certificates
 WORKDIR /app
 
 COPY --from=build /app/main /app/
-COPY --from=build /app/payout-worker /app/
 COPY --from=build /app/futures-commission-sync /app/
+COPY --from=build /app/monthly-tier-review /app/
 
 EXPOSE 8080
 

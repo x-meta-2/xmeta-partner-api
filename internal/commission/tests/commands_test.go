@@ -55,8 +55,8 @@ func baseRepo() *TradeEventRepo {
 		CreateCommissionFn:          func(*database.Commission) error { return nil },
 		IncrementPartnerEarningsFn:  func(string, float64) error { return nil },
 		ActivateReferralFn:          func(string, time.Time) error { return nil },
-		GetPartnerTotalVolumeFn:     func(string) (float64, error) { return 1000, nil },
-		GetPartnerActiveClientsFn:   func(string) (int64, error) { return 1, nil },
+		GetPartnerTotalVolumeFn:     func(string, time.Time, time.Time) (float64, error) { return 1000, nil },
+		GetPartnerActiveClientsFn:   func(string, time.Time, time.Time) (int64, error) { return 1, nil },
 		FindAllTiersAscFn:           func() ([]database.PartnerTier, error) { return testTiers(), nil },
 		UpgradePartnerTierFn:        func(string, string, int) error { return nil },
 	}
@@ -454,8 +454,8 @@ func TestProcessTradeEvent_AutoUpgrade_MeetsNextTier(t *testing.T) {
 	var upgradedTo string
 
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 60000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 5, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 60000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 5, nil }
 	repo.UpgradePartnerTierFn = func(_ string, tierID string, _ int) error {
 		upgradedTo = tierID
 		return nil
@@ -478,8 +478,8 @@ func TestProcessTradeEvent_AutoUpgrade_SkipsMultipleLevels(t *testing.T) {
 	var upgradedTo string
 
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 500000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 50, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 500000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 50, nil }
 	repo.UpgradePartnerTierFn = func(_ string, tierID string, _ int) error {
 		upgradedTo = tierID
 		return nil
@@ -502,8 +502,8 @@ func TestProcessTradeEvent_AutoUpgrade_NotEnoughClients(t *testing.T) {
 	upgraded := false
 
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 500000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 3, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 500000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 3, nil }
 	repo.UpgradePartnerTierFn = func(string, string, int) error {
 		upgraded = true
 		return nil
@@ -535,8 +535,8 @@ func TestProcessTradeEvent_AutoUpgrade_AlreadyHighestTier(t *testing.T) {
 
 	repo := baseRepo()
 	repo.FindActivePartnerWithTierFn = func(string) (*database.Partner, error) { return partner, nil }
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 1000000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 100, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 1000000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 100, nil }
 	repo.UpgradePartnerTierFn = func(string, string, int) error {
 		upgraded = true
 		return nil
@@ -557,7 +557,7 @@ func TestProcessTradeEvent_AutoUpgrade_AlreadyHighestTier(t *testing.T) {
 
 func TestProcessTradeEvent_AutoUpgrade_VolumeDBError_ReturnsError(t *testing.T) {
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 0, errDB }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 0, errDB }
 
 	handler := commands.ProcessTradeEventHandler{Repo: repo}
 	_, err := handler.Handle(structs.TradeEventParams{
@@ -573,8 +573,8 @@ func TestProcessTradeEvent_AutoUpgrade_MeetsVolumeButNotClients(t *testing.T) {
 	var upgradedTo string
 
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 200000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 10, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 200000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 10, nil }
 	repo.UpgradePartnerTierFn = func(_ string, tierID string, _ int) error {
 		upgradedTo = tierID
 		return nil
@@ -597,8 +597,8 @@ func TestProcessTradeEvent_UsesCurrentTierRate_NotUpgraded(t *testing.T) {
 	var created *database.Commission
 
 	repo := baseRepo()
-	repo.GetPartnerTotalVolumeFn = func(string) (float64, error) { return 60000, nil }
-	repo.GetPartnerActiveClientsFn = func(string) (int64, error) { return 5, nil }
+	repo.GetPartnerTotalVolumeFn = func(string, time.Time, time.Time) (float64, error) { return 60000, nil }
+	repo.GetPartnerActiveClientsFn = func(string, time.Time, time.Time) (int64, error) { return 5, nil }
 	repo.CreateCommissionFn = func(c *database.Commission) error {
 		created = c
 		return nil

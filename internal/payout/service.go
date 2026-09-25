@@ -14,11 +14,10 @@ type Service struct {
 }
 
 type Commands struct {
-	ApprovePayout       *commands.ApprovePayoutHandler
-	RejectPayout        *commands.RejectPayoutHandler
-	CompletePayout      *commands.CompletePayoutHandler
-	ProcessDailyPayouts *commands.ProcessDailyPayoutsHandler
-	RequestPayout       *commands.RequestPayoutHandler
+	ApprovePayout  *commands.ApprovePayoutHandler
+	RejectPayout   *commands.RejectPayoutHandler
+	CompletePayout *commands.CompletePayoutHandler
+	RequestPayout  *commands.RequestPayoutHandler
 }
 
 type Queries struct {
@@ -45,9 +44,6 @@ func NewService(db *gorm.DB) *Service {
 			CompletePayout: &commands.CompletePayoutHandler{
 				DB:      db,
 				Payouts: payoutRepo,
-			},
-			ProcessDailyPayouts: &commands.ProcessDailyPayoutsHandler{
-				DB: db,
 			},
 			RequestPayout: &commands.RequestPayoutHandler{
 				DB: db,

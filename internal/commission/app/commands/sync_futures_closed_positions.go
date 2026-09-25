@@ -119,7 +119,7 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 		return false, "zero closeNotional", nil
 	}
 
-	tradeFee := truncate8(position.CloseNotional * feeRate)
+	tradeFee := truncate4(position.CloseNotional * feeRate)
 	if tradeFee <= 0 {
 		return false, "zero derived fee", nil
 	}
@@ -160,7 +160,7 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 	}
 
 	commissionRate := partner.Tier.CommissionRate
-	rebateAmount := truncate8(tradeFee * commissionRate)
+	rebateAmount := truncate4(tradeFee * commissionRate)
 	commission := database.Commission{
 		PartnerID:        partner.ID,
 		ReferredUserID:   position.UserID,
@@ -188,7 +188,7 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 				return err
 			}
 		}
-		return h.maybeUpgradeTier(txRepo, partner)
+		return maybeUpgradeTierForTrade(txRepo, partner, position.ClosedAt)
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrDuplicatePosition) {
@@ -198,38 +198,6 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 	}
 
 	return true, "", nil
-}
-
-func (h *SyncFuturesClosedPositionsHandler) maybeUpgradeTier(txRepo port.TradeEventRepo, partner *database.Partner) error {
-	totalVolume, err := txRepo.GetPartnerTotalVolume(partner.ID)
-	if err != nil {
-		return err
-	}
-
-	activeClients, err := txRepo.GetPartnerActiveClients(partner.ID)
-	if err != nil {
-		return err
-	}
-
-	tiers, err := txRepo.FindAllTiersAsc()
-	if err != nil {
-		return err
-	}
-
-	var bestTier *database.PartnerTier
-	for i := range tiers {
-		t := &tiers[i]
-		volumeOK := t.MinVolume == 0 || totalVolume >= t.MinVolume
-		clientsOK := t.MinActiveClients == 0 || activeClients >= int64(t.MinActiveClients)
-		if volumeOK && clientsOK {
-			bestTier = t
-		}
-	}
-
-	if bestTier != nil && bestTier.Level > partner.Tier.Level {
-		return txRepo.UpgradePartnerTier(partner.ID, bestTier.ID, bestTier.Level)
-	}
-	return nil
 }
 
 func parseSyncRange(startValue, endValue string) (time.Time, time.Time, error) {

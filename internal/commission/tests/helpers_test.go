@@ -44,8 +44,8 @@ type TradeEventRepo struct {
 	CreateCommissionFn          func(c *database.Commission) error
 	IncrementPartnerEarningsFn  func(partnerID string, amount float64) error
 	ActivateReferralFn          func(referralID string, firstTradeAt time.Time) error
-	GetPartnerTotalVolumeFn     func(partnerID string) (float64, error)
-	GetPartnerActiveClientsFn   func(partnerID string) (int64, error)
+	GetPartnerTotalVolumeFn     func(partnerID string, startedAt time.Time, endedAt time.Time) (float64, error)
+	GetPartnerActiveClientsFn   func(partnerID string, startedAt time.Time, endedAt time.Time) (int64, error)
 	FindAllTiersAscFn           func() ([]database.PartnerTier, error)
 	UpgradePartnerTierFn        func(partnerID string, newTierID string, newLevel int) error
 }
@@ -71,11 +71,11 @@ func (m *TradeEventRepo) IncrementPartnerEarnings(partnerID string, amount float
 func (m *TradeEventRepo) ActivateReferral(referralID string, firstTradeAt time.Time) error {
 	return m.ActivateReferralFn(referralID, firstTradeAt)
 }
-func (m *TradeEventRepo) GetPartnerTotalVolume(partnerID string) (float64, error) {
-	return m.GetPartnerTotalVolumeFn(partnerID)
+func (m *TradeEventRepo) GetPartnerTotalVolume(partnerID string, startedAt time.Time, endedAt time.Time) (float64, error) {
+	return m.GetPartnerTotalVolumeFn(partnerID, startedAt, endedAt)
 }
-func (m *TradeEventRepo) GetPartnerActiveClients(partnerID string) (int64, error) {
-	return m.GetPartnerActiveClientsFn(partnerID)
+func (m *TradeEventRepo) GetPartnerActiveClients(partnerID string, startedAt time.Time, endedAt time.Time) (int64, error) {
+	return m.GetPartnerActiveClientsFn(partnerID, startedAt, endedAt)
 }
 func (m *TradeEventRepo) FindAllTiersAsc() ([]database.PartnerTier, error) {
 	return m.FindAllTiersAscFn()
