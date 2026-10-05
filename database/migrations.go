@@ -21,14 +21,15 @@ func RunMigrations(db *gorm.DB) {
 	log.Println("!!! RunMigrations STARTING !!!")
 
 	// ── Active migrations ──────────────────────────────────────────────
-	migrateReferralsToTimeBound(db)   // 2026-04-29 — switchable referrals
-	dropDeadReferralColumns(db)       // 2026-04-29 — utm + bonus + ip/ua were never wired
-	dropSubAffiliateArtifacts(db)     // 2026-04-30 — full sub-affiliate removal
-	migrateCommissionsSchema(db)      // 2026-05-05 — align with monorepo trade event format
-	renameCommissionColumns(db)       // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
-	ensureDefaultTier(db)             // 2026-05-07 — guarantee at least one default tier exists
-	addPayoutConcurrencyGuard(db)     // 2026-05-07 — partial unique index: one pending/processing payout per partner
-	addReferralUnlinkRequestGuard(db) // 2026-09-21 — one pending unlink request per referred user
+	migrateReferralsToTimeBound(db)    // 2026-04-29 — switchable referrals
+	dropDeadReferralColumns(db)        // 2026-04-29 — utm + bonus + ip/ua were never wired
+	dropSubAffiliateArtifacts(db)      // 2026-04-30 — full sub-affiliate removal
+	migrateCommissionsSchema(db)       // 2026-05-05 — align with monorepo trade event format
+	renameCommissionColumns(db)        // 2026-05-06 — fee_amount → commission_amount, commission_amount → rebate_amount
+	ensureDefaultTier(db)              // 2026-05-07 — guarantee at least one default tier exists
+	addPayoutConcurrencyGuard(db)      // 2026-05-07 — partial unique index: one pending/processing payout per partner
+	addReferralUnlinkRequestGuard(db)  // 2026-09-21 — one pending unlink request per referred user
+	addPayoutTaxAndTransferColumns(db) // 2026-10-05 — tax snapshot + transfer service metadata
 
 	log.Println("Custom migrations completed!")
 }
@@ -256,6 +257,87 @@ func addReferralUnlinkRequestGuard(db *gorm.DB) {
 	}
 
 	log.Println("✓ Referral unlink request guard index created")
+}
+
+func addPayoutTaxAndTransferColumns(db *gorm.DB) {
+	log.Println("→ addPayoutTaxAndTransferColumns")
+
+	addColumnIfMissing(db, "payouts", "gross_amount", "DECIMAL(20,8) NOT NULL DEFAULT 0")
+	addColumnIfMissing(db, "payouts", "tax_rate", "DECIMAL(5,4) NOT NULL DEFAULT 0")
+	addColumnIfMissing(db, "payouts", "tax_amount", "DECIMAL(20,8) NOT NULL DEFAULT 0")
+	addColumnIfMissing(db, "payouts", "transfer_service", "VARCHAR")
+	addColumnIfMissing(db, "payouts", "transfer_request_id", "VARCHAR")
+	addColumnIfMissing(db, "payouts", "transfer_transaction_id", "VARCHAR")
+	addColumnIfMissing(db, "payouts", "transfer_status", "VARCHAR NOT NULL DEFAULT 'not_started'")
+	addColumnIfMissing(db, "payouts", "transfer_response", "TEXT")
+	addColumnIfMissing(db, "payouts", "transfer_error", "TEXT")
+
+	if err := db.Exec(`
+		UPDATE payouts
+		SET
+			gross_amount = CASE WHEN gross_amount = 0 THEN amount ELSE gross_amount END,
+			transfer_status = COALESCE(NULLIF(transfer_status, ''), 'not_started')
+	`).Error; err != nil {
+		log.Printf("  Error backfilling payout tax/transfer columns: %v", err)
+		return
+	}
+
+	if err := db.Exec(`
+		UPDATE payouts
+		SET
+			period_start = commission_periods.period_start,
+			period_end = commission_periods.period_end
+		FROM (
+			SELECT
+				payout_items.payout_id,
+				MIN(commissions.trade_date) AS period_start,
+				MAX(commissions.trade_date) AS period_end
+			FROM payout_items
+			JOIN commissions ON commissions.id = payout_items.commission_id
+			GROUP BY payout_items.payout_id
+		) AS commission_periods
+		WHERE payouts.id = commission_periods.payout_id
+	`).Error; err != nil {
+		log.Printf("  Error backfilling payout commission periods: %v", err)
+		return
+	}
+
+	// Existing active payout requests were created before tax snapshots existed.
+	// Apply the 10% tax once before an admin can approve/transfer them.
+	if err := db.Exec(`
+		UPDATE payouts
+		SET
+			tax_rate = 0.10,
+			tax_amount = FLOOR((gross_amount * 0.10) * 10000) / 10000,
+			amount = FLOOR((gross_amount - (FLOOR((gross_amount * 0.10) * 10000) / 10000)) * 10000) / 10000
+		WHERE status IN ('pending', 'processing')
+		  AND tax_rate = 0
+		  AND tax_amount = 0
+		  AND gross_amount > 0
+	`).Error; err != nil {
+		log.Printf("  Error applying tax to active legacy payouts: %v", err)
+		return
+	}
+
+	dropColumn(db, "payouts", "net_amount")
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_payouts_transfer_request_id
+		ON payouts (transfer_request_id)
+	`).Error; err != nil {
+		log.Printf("  Error creating payout transfer_request_id index: %v", err)
+		return
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_payouts_transfer_transaction_id
+		ON payouts (transfer_transaction_id)
+	`).Error; err != nil {
+		log.Printf("  Error creating payout transfer_transaction_id index: %v", err)
+		return
+	}
+
+	log.Println("✓ payout tax snapshot and transfer metadata columns ready")
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────

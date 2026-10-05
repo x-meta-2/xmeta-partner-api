@@ -28,12 +28,21 @@ func (h *CompletePayoutHandler) Handle(id string, params structs.PayoutCompleteP
 
 		now := time.Now()
 		transactionID := strings.TrimSpace(params.TransactionID)
+		transferTransactionID := strings.TrimSpace(params.TransferTransactionID)
+		if transactionID == "" && transferTransactionID == "" {
+			return fmt.Errorf("transactionId or transferTransactionId is required")
+		}
 		if transactionID == "" {
-			return fmt.Errorf("transactionId is required")
+			transactionID = transferTransactionID
 		}
 
 		payout.Status = database.PayoutStatusCompleted
 		payout.TransactionID = transactionID
+		payout.TransferService = strings.TrimSpace(params.TransferService)
+		payout.TransferRequestID = strings.TrimSpace(params.TransferRequestID)
+		payout.TransferTransactionID = transferTransactionID
+		payout.TransferStatus = "success"
+		payout.TransferResponse = params.TransferResponse
 		payout.ProcessedAt = &now
 
 		if err := tx.Save(&payout).Error; err != nil {

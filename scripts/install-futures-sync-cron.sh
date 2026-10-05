@@ -3,8 +3,11 @@
 set -eu
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-FUTURES_LOG_FILE="${FUTURES_SYNC_LOG_FILE:-/var/log/xmeta-partner-futures-sync.log}"
-TIER_LOG_FILE="${MONTHLY_TIER_REVIEW_LOG_FILE:-/var/log/xmeta-partner-monthly-tier-review.log}"
+LOG_DIR="${PARTNER_JOB_LOG_DIR:-${PROJECT_DIR}/logs}"
+FUTURES_LOG_FILE="${FUTURES_SYNC_LOG_FILE:-${LOG_DIR}/futures-sync.log}"
+TIER_LOG_FILE="${MONTHLY_TIER_REVIEW_LOG_FILE:-${LOG_DIR}/monthly-tier-review.log}"
+
+mkdir -p "$LOG_DIR"
 
 if [ "$(date +%z)" = "+0800" ]; then
   FUTURES_CRON_TIME="0 8 * * *"

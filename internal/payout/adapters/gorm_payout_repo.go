@@ -48,6 +48,23 @@ func (r *GormPayoutRepo) AdminList(params structs.PayoutListParams) ([]database.
 	orm = common.Equal(orm, "status", params.Status)
 	orm = common.Equal(orm, "partner_id", params.PartnerID)
 
+	if params.Query != "" {
+		q := "%" + params.Query + "%"
+		orm = orm.
+			Joins("LEFT JOIN partners ON partners.id = payouts.partner_id").
+			Joins("LEFT JOIN users ON users.id = partners.user_id").
+			Where(
+				`payouts.id ILIKE ?
+					OR payouts.partner_id ILIKE ?
+					OR users.email ILIKE ?
+					OR users.first_name ILIKE ?
+					OR users.last_name ILIKE ?
+					OR partners.company_name ILIKE ?
+					OR partners.referral_code ILIKE ?`,
+				q, q, q, q, q, q, q,
+			)
+	}
+
 	total := common.Total(orm.Scopes(common.SortDateFilter(&params.PaginationInput)))
 
 	var payouts []database.Payout
@@ -82,7 +99,7 @@ func (r *GormPayoutRepo) AdminDetail(id string) (*database.Payout, []database.Pa
 	}
 
 	var items []database.PayoutItem
-	if err := r.DB.Where("payout_id = ?", id).Find(&items).Error; err != nil {
+	if err := r.DB.Preload("Commission").Where("payout_id = ?", id).Find(&items).Error; err != nil {
 		return nil, nil, err
 	}
 

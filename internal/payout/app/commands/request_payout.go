@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"xmeta-partner/database"
@@ -12,6 +13,8 @@ import (
 type RequestPayoutHandler struct {
 	DB *gorm.DB
 }
+
+const payoutTaxRate = 0.10
 
 func (h *RequestPayoutHandler) Handle(partnerID string) (*database.Payout, error) {
 	var payout database.Payout
@@ -52,25 +55,38 @@ func (h *RequestPayoutHandler) Handle(partnerID string) (*database.Payout, error
 		}
 
 		var pending struct {
-			Amount float64
-			Count  int64
+			Amount      float64
+			Count       int64
+			PeriodStart time.Time
+			PeriodEnd   time.Time
 		}
 		if err := tx.Model(&database.Commission{}).
 			Where("id IN ?", lockedIDs).
-			Select("COALESCE(SUM(rebate_amount), 0) as amount, COUNT(*) as count").
+			Select(`
+				COALESCE(SUM(rebate_amount), 0) as amount,
+				COUNT(*) as count,
+				MIN(trade_date) as period_start,
+				MAX(trade_date) as period_end
+			`).
 			Scan(&pending).Error; err != nil {
 			return err
 		}
 
-		now := time.Now()
+		grossAmount := truncatePayoutAmount(pending.Amount)
+		taxAmount := truncatePayoutAmount(grossAmount * payoutTaxRate)
+		netAmount := truncatePayoutAmount(grossAmount - taxAmount)
 		payout = database.Payout{
 			PartnerID:       partnerID,
-			Amount:          pending.Amount,
+			Amount:          netAmount,
+			GrossAmount:     grossAmount,
+			TaxRate:         payoutTaxRate,
+			TaxAmount:       taxAmount,
 			Currency:        "USDT",
 			CommissionCount: int(pending.Count),
-			PeriodStart:     now,
-			PeriodEnd:       now,
+			PeriodStart:     pending.PeriodStart,
+			PeriodEnd:       pending.PeriodEnd,
 			Status:          database.PayoutStatusPending,
+			TransferStatus:  "not_started",
 		}
 		if err := tx.Create(&payout).Error; err != nil {
 			return err
@@ -130,4 +146,11 @@ func partnerAdvisoryKey(partnerID string) int64 {
 		h *= 1099511628211
 	}
 	return int64(h)
+}
+
+func truncatePayoutAmount(value float64) float64 {
+	if value <= 0 {
+		return 0
+	}
+	return math.Floor(value*10000) / 10000
 }
