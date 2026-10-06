@@ -14,7 +14,7 @@ type ReferralStatsHandler struct {
 func (h *ReferralStatsHandler) Handle(partnerID string) (dto.ReferralStats, error) {
 	base := func() *gorm.DB {
 		return h.DB.Model(&database.Referral{}).
-			Where("partner_id = ? AND ended_at IS NULL", partnerID)
+			Where("partner_id = ?", partnerID)
 	}
 
 	var stats dto.ReferralStats
@@ -28,6 +28,9 @@ func (h *ReferralStatsHandler) Handle(partnerID string) (dto.ReferralStats, erro
 		return stats, err
 	}
 	if err := base().Where("status = ?", database.ReferralStatusInactive).Count(&stats.Inactive).Error; err != nil {
+		return stats, err
+	}
+	if err := base().Where("status = ?", database.ReferralStatusUnlinked).Count(&stats.Unlinked).Error; err != nil {
 		return stats, err
 	}
 

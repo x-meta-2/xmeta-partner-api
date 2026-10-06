@@ -6,19 +6,10 @@ import (
 	"xmeta-partner/database"
 )
 
-type ReferralUserRef struct {
-	ID          string `json:"id"`
-	MaskedEmail string `json:"maskedEmail"`
-	FirstName   string `json:"firstName"`
-	LastInitial string `json:"lastInitial"`
-	KycLevel    int    `json:"kycLevel"`
-}
-
 type ReferralListItem struct {
 	ID             string                  `json:"id"`
 	PartnerID      string                  `json:"partnerId"`
 	ReferredUserID string                  `json:"referredUserId"`
-	ReferredUser   *ReferralUserRef        `json:"referredUser"`
 	ReferralLinkID *string                 `json:"referralLinkId"`
 	Status         database.ReferralStatus `json:"status"`
 	StartedAt      time.Time               `json:"startedAt"`
@@ -33,6 +24,7 @@ type ReferralStats struct {
 	Registered int64 `json:"registered"`
 	Active     int64 `json:"active"`
 	Inactive   int64 `json:"inactive"`
+	Unlinked   int64 `json:"unlinked"`
 }
 
 type ReferralLinkLookup struct {
@@ -52,6 +44,15 @@ type CurrentReferralPartner struct {
 type CurrentReferral struct {
 	ReferralCode string                 `json:"referralCode"`
 	Partner      CurrentReferralPartner `json:"partner"`
+	CanUnlink    bool                   `json:"canUnlink"`
+	NextUnlinkAt *time.Time             `json:"nextUnlinkAt,omitempty"`
+}
+
+type ReferralUnlinkResult struct {
+	ReferralID   string                  `json:"referralId"`
+	Status       database.ReferralStatus `json:"status"`
+	UnlinkedAt   time.Time               `json:"unlinkedAt"`
+	NextUnlinkAt time.Time               `json:"nextUnlinkAt"`
 }
 
 type AdminReferralDetail struct {

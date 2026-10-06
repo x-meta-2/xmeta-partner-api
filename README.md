@@ -20,8 +20,8 @@ Written in Go (Gin + GORM), backed by PostgreSQL, fronted by xmeta-partner-web. 
 
 ```
 .
-├── cmd/futures-commission-sync/ # Daily cron — syncs futures closed positions into commissions
-├── cmd/monthly-tier-review/ # Monthly cron — reviews previous-month tier assignment
+├── cmd/futures-commission-sync/ # Daily 00:05 UTC+8 cron — syncs yesterday's futures closed positions into commissions
+├── cmd/monthly-tier-review/ # Monthly day 1 00:10 UTC+8 cron — reviews previous-month tier assignment
 ├── controllers/            # HTTP handlers, grouped by audience
 │   ├── admin/              # Admin back-office endpoints (Bearer + RBAC)
 │   ├── partner/            # Partner self-service (Bearer)
@@ -69,6 +69,7 @@ Called by xmeta-monorepo when domain events fire.
   `futures-commission-sync` job.
 - `GET /referral-links/:code` — preview a code (sender identity + active flag)
 - `POST /link-referral` — attach a user to a partner's code (registration or settings flow)
+- `POST /referral-unlink` — user-initiated immediate unlink (limited to once every 7 days)
 - `POST /unlink-referral` — detach a user (account closure / compliance)
 - `POST /user-deposited` — record first deposit on the active referral
 
@@ -163,7 +164,7 @@ Default production command:
 docker compose --profile jobs run --rm futures-commission-sync
 ```
 
-The default run scans the last `FUTURES_SYNC_LOOKBACK_DAYS` closed days and skips duplicates via the unique `commissions.position_id` key.
+The default run scans the last `FUTURES_SYNC_LOOKBACK_DAYS` closed days and skips duplicates via the unique `commissions.position_id` key. In production cron it runs at 00:05 UTC+8, so the previous calendar day is complete before syncing.
 
 Manual backfill:
 
@@ -183,7 +184,7 @@ monthly tier review on day 1 at `08:30 UTC+8`.
 
 ## Internal events contract
 
-xmeta-monorepo posts to `/api/v1/internal/*` for referral lookups, referral linking, and unlink requests. All requests must carry header:
+xmeta-monorepo posts to `/api/v1/internal/*` for referral lookups, referral linking, and user unlink actions. All requests must carry header:
 
 ```
 X-Internal-API-Key: <INTERNAL_API_KEY from .env>

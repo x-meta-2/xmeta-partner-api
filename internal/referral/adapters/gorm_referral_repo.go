@@ -29,7 +29,6 @@ func (r *GormReferralRepo) FindByID(id string) (*database.Referral, error) {
 func (r *GormReferralRepo) FindByIDAndPartner(id, partnerID string) (*database.Referral, error) {
 	var referral database.Referral
 	if err := r.DB.
-		Preload("ReferredUser").
 		Where("id = ? AND partner_id = ?", id, partnerID).
 		First(&referral).Error; err != nil {
 		return nil, err
@@ -52,21 +51,18 @@ func (r *GormReferralRepo) List(partnerID string, params structs.ReferralListPar
 	params.PaginationInput = pInput
 
 	orm := r.DB.Model(&database.Referral{}).
-		Where("partner_id = ? AND ended_at IS NULL", partnerID)
+		Where("partner_id = ?", partnerID)
 	orm = common.Equal(orm, "status", params.Status)
 
 	if params.Query != "" {
 		q := "%" + params.Query + "%"
-		orm = orm.
-			Joins("LEFT JOIN users ON users.id = referrals.referred_user_id").
-			Where("users.email ILIKE ? OR users.first_name ILIKE ? OR users.last_name ILIKE ?", q, q, q)
+		orm = orm.Where("referred_user_id ILIKE ?", q)
 	}
 
 	total := common.Total(orm.Scopes(common.SortDateFilter(&params.PaginationInput)))
 
 	var referrals []database.Referral
 	if err := orm.
-		Preload("ReferredUser").
 		Order("created_at desc").
 		Scopes(common.Paginate(&params.PaginationInput)).
 		Find(&referrals).Error; err != nil {

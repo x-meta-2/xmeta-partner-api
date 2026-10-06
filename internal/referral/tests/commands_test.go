@@ -3,6 +3,7 @@ package tests
 import (
 	"regexp"
 	"testing"
+	"time"
 
 	"xmeta-partner/database"
 	"xmeta-partner/internal/referral/app/commands"
@@ -12,6 +13,13 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
+
+func expectReferralCycleCheck(mock sqlmock.Sqlmock, targetPartnerUserID, userID string, count int64) {
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(count)
+	mock.ExpectQuery(regexp.QuoteMeta(`WITH RECURSIVE referral_upline`)).
+		WithArgs(targetPartnerUserID, userID).
+		WillReturnRows(rows)
+}
 
 // ---------------------------------------------------------------------------
 // CreateLink
@@ -216,6 +224,7 @@ func TestLinkReferral_SamePartnerRetry_Idempotent(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "partners" WHERE id = $1 AND "partners"."deleted_at" IS NULL ORDER BY "partners"."id" LIMIT $2`)).
 		WithArgs("partner-1", 1).
 		WillReturnRows(partnerRows)
+	expectReferralCycleCheck(mock, "owner-1", "user-2", 0)
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
@@ -255,6 +264,7 @@ func TestLinkReferral_SamePartnerDifferentLink_UpdatesLinkID(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "partners" WHERE id = $1 AND "partners"."deleted_at" IS NULL ORDER BY "partners"."id" LIMIT $2`)).
 		WithArgs("partner-1", 1).
 		WillReturnRows(partnerRows)
+	expectReferralCycleCheck(mock, "owner-1", "user-2", 0)
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
@@ -297,6 +307,7 @@ func TestLinkReferral_IdempotencyCheckDBError_Returns(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "partners" WHERE id = $1 AND "partners"."deleted_at" IS NULL ORDER BY "partners"."id" LIMIT $2`)).
 		WithArgs("partner-1", 1).
 		WillReturnRows(partnerRows)
+	expectReferralCycleCheck(mock, "owner-1", "user-2", 0)
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
@@ -312,6 +323,34 @@ func TestLinkReferral_IdempotencyCheckDBError_Returns(t *testing.T) {
 	err := handler.Handle("user-2", "TESTCODE")
 
 	assert.ErrorIs(t, err, errDB)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestLinkReferral_CircularReferral_ReturnsError(t *testing.T) {
+	gormDB, mock := newTestDB(t)
+
+	links := &ReferralLinkRepo{
+		FindByCodeActiveFn: func(code string) (*database.ReferralLink, error) {
+			return &database.ReferralLink{
+				Base:      database.Base{ID: "link-b"},
+				PartnerID: "partner-b",
+				Code:      code,
+				IsActive:  true,
+			}, nil
+		},
+	}
+
+	partnerRows := sqlmock.NewRows([]string{"id", "user_id", "status"}).
+		AddRow("partner-b", "user-b", "active")
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "partners" WHERE id = $1 AND "partners"."deleted_at" IS NULL ORDER BY "partners"."id" LIMIT $2`)).
+		WithArgs("partner-b", 1).
+		WillReturnRows(partnerRows)
+	expectReferralCycleCheck(mock, "user-b", "user-a", 1)
+
+	handler := commands.LinkReferralHandler{DB: gormDB, Links: links}
+	err := handler.Handle("user-a", "BCODE")
+
+	assert.ErrorIs(t, err, domain.ErrCircularReferral)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -334,6 +373,7 @@ func TestLinkReferral_DifferentPartnerActive_ReturnsError(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "partners" WHERE id = $1 AND "partners"."deleted_at" IS NULL ORDER BY "partners"."id" LIMIT $2`)).
 		WithArgs("partner-2", 1).
 		WillReturnRows(partnerRows)
+	expectReferralCycleCheck(mock, "owner-2", "user-2", 0)
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(`SELECT pg_advisory_xact_lock`)).
@@ -400,5 +440,42 @@ func TestUnlinkReferral_DBError(t *testing.T) {
 	err := handler.Handle("user-1")
 
 	assert.ErrorIs(t, err, errDB)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCanUnlinkNow_NoPreviousUnlink(t *testing.T) {
+	gormDB, mock := newTestDB(t)
+
+	rows := sqlmock.NewRows([]string{"id", "referred_user_id", "status", "ended_at"})
+	mock.ExpectQuery(`SELECT \* FROM "referrals" WHERE`).
+		WithArgs("user-1", database.ReferralStatusUnlinked, 1).
+		WillReturnRows(rows)
+
+	canUnlink, nextUnlinkAt, err := commands.CanUnlinkNow(gormDB, "user-1", time.Now())
+
+	assert.NoError(t, err)
+	assert.True(t, canUnlink)
+	assert.Nil(t, nextUnlinkAt)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCanUnlinkNow_RecentUnlinkBlocks(t *testing.T) {
+	gormDB, mock := newTestDB(t)
+	now := time.Date(2026, 10, 6, 12, 0, 0, 0, time.UTC)
+	endedAt := now.Add(-24 * time.Hour)
+
+	rows := sqlmock.NewRows([]string{"id", "referred_user_id", "status", "ended_at"}).
+		AddRow("ref-1", "user-1", database.ReferralStatusUnlinked, endedAt)
+	mock.ExpectQuery(`SELECT \* FROM "referrals" WHERE`).
+		WithArgs("user-1", database.ReferralStatusUnlinked, 1).
+		WillReturnRows(rows)
+
+	canUnlink, nextUnlinkAt, err := commands.CanUnlinkNow(gormDB, "user-1", now)
+
+	assert.NoError(t, err)
+	assert.False(t, canUnlink)
+	if assert.NotNil(t, nextUnlinkAt) {
+		assert.Equal(t, endedAt.Add(7*24*time.Hour), *nextUnlinkAt)
+	}
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

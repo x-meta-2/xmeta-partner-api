@@ -28,7 +28,7 @@ func (co ReferralController) Register(router *gin.RouterGroup) {
 
 // List
 // @Summary       List partner referrals
-// @Description   Returns a paginated list of referrals for the authenticated partner. User PII is masked — only first name + last initial + masked email are exposed.
+// @Description   Returns a paginated list of referrals for the authenticated partner. User PII is not exposed; only the referred user's UID is returned.
 // @Tags          Partner Referrals
 // @Accept        json
 // @Produce       json
@@ -65,7 +65,7 @@ func (co ReferralController) List(c *gin.Context) {
 
 // Detail
 // @Summary       Get referral detail
-// @Description   Returns one referral for the authenticated partner. User PII is masked — only first name + last initial + masked email are exposed.
+// @Description   Returns one referral for the authenticated partner. User PII is not exposed; only the referred user's UID is returned.
 // @Tags          Partner Referrals
 // @Accept        json
 // @Produce       json

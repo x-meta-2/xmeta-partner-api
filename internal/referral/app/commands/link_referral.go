@@ -32,6 +32,13 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 	if partner.UserID == userID {
 		return domain.ErrSelfReferral
 	}
+	hasCycle, err := h.wouldCreateCycle(userID, partner.UserID)
+	if err != nil {
+		return err
+	}
+	if hasCycle {
+		return domain.ErrCircularReferral
+	}
 
 	return h.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", userAdvisoryKey(userID)).Error; err != nil {
@@ -84,6 +91,39 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 
 		return nil
 	})
+}
+
+func (h *LinkReferralHandler) wouldCreateCycle(userID, targetPartnerUserID string) (bool, error) {
+	var count int64
+	err := h.DB.Raw(`
+		WITH RECURSIVE referral_upline AS (
+			SELECT r.partner_id, p.user_id, 1 AS depth
+			FROM referrals r
+			JOIN partners p ON p.id = r.partner_id AND p.deleted_at IS NULL
+			WHERE r.referred_user_id = ?
+				AND r.ended_at IS NULL
+				AND r.deleted_at IS NULL
+
+			UNION ALL
+
+			SELECT r.partner_id, p.user_id, referral_upline.depth + 1
+			FROM referral_upline
+			JOIN referrals r ON r.referred_user_id = referral_upline.user_id
+				AND r.ended_at IS NULL
+				AND r.deleted_at IS NULL
+			JOIN partners p ON p.id = r.partner_id AND p.deleted_at IS NULL
+			WHERE referral_upline.depth < 50
+		)
+		SELECT COUNT(*)
+		FROM referral_upline
+		JOIN partners current_partner ON current_partner.id = referral_upline.partner_id
+			AND current_partner.deleted_at IS NULL
+		WHERE current_partner.user_id = ?
+	`, targetPartnerUserID, userID).Scan(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func userAdvisoryKey(userID string) int64 {

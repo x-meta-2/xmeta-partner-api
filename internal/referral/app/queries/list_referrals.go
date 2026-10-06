@@ -5,7 +5,6 @@ import (
 	"xmeta-partner/internal/referral/app/dto"
 	"xmeta-partner/internal/referral/port"
 	"xmeta-partner/structs"
-	"xmeta-partner/utils"
 )
 
 type ListReferralsHandler struct {
@@ -34,18 +33,9 @@ func toReferralListItem(r database.Referral) dto.ReferralListItem {
 		Status:         r.Status,
 		StartedAt:      r.StartedAt,
 		EndedAt:        r.EndedAt,
-		RegisteredAt: r.RegisteredAt,
-		FirstTradeAt: r.FirstTradeAt,
+		RegisteredAt:   r.RegisteredAt,
+		FirstTradeAt:   r.FirstTradeAt,
 		CreatedAt:      r.CreatedAt,
-	}
-	if r.ReferredUser != nil {
-		item.ReferredUser = &dto.ReferralUserRef{
-			ID:          r.ReferredUser.ID,
-			MaskedEmail: utils.MaskEmail(r.ReferredUser.Email),
-			FirstName:   r.ReferredUser.FirstName,
-			LastInitial: utils.LastInitial(r.ReferredUser.LastName),
-			KycLevel:    r.ReferredUser.KycLevel,
-		}
 	}
 	return item
 }

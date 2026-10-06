@@ -28,7 +28,7 @@ type ReferralLinkCreateParams struct {
 
 type ReferralUnlinkRequestCreateParams struct {
 	UserID string `json:"userId" binding:"required"`
-	Reason string `json:"reason" binding:"required,min=3,max=1000"`
+	Reason string `json:"reason" binding:"max=1000"`
 }
 
 type ReferralUnlinkRequestReviewParams struct {

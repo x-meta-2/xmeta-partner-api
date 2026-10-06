@@ -27,7 +27,8 @@ func (co EventsController) Register(router *gin.RouterGroup) {
 		r.POST("/link-referral", co.LinkReferral)
 		r.POST("/unlink-referral", co.UnlinkReferral)
 		r.GET("/referrals/current/:userId", co.CurrentReferral)
-		r.POST("/referral-unlink-requests", co.CreateUnlinkRequest)
+		r.POST("/referral-unlink", co.UserUnlinkReferral)
+		r.POST("/referral-unlink-requests", co.UserUnlinkReferral)
 		r.POST("/referrals/check-user", co.CheckDirectReferral)
 	}
 }
@@ -91,6 +92,7 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 			co.SetError(c, http.StatusNotFound, err.Error())
 		case errors.Is(err, domain.ErrPartnerNotActive),
 			errors.Is(err, domain.ErrSelfReferral),
+			errors.Is(err, domain.ErrCircularReferral),
 			errors.Is(err, domain.ErrActiveReferralExists):
 			co.SetError(c, http.StatusBadRequest, err.Error())
 		default:
@@ -162,20 +164,20 @@ func (co EventsController) CurrentReferral(c *gin.Context) {
 	co.SetBody(c, result)
 }
 
-// CreateUnlinkRequest
-// @Summary       Create a user unlink request
-// @Description   Internal-only endpoint used by account-service when a logged-in user asks to stop following their current partner. This only creates a pending request; admin approval performs the actual unlink.
+// UserUnlinkReferral
+// @Summary       Unlink a user from their current partner
+// @Description   Internal-only endpoint used by account-service when a logged-in user asks to stop following their current partner. The unlink is immediate and can only be performed once every 7 days.
 // @Tags          System Events
 // @Accept        json
 // @Produce       json
 // @Param         request body structs.ReferralUnlinkRequestCreateParams true "Unlink request payload"
-// @Success       200 {object} structs.ResponseBody{body=database.ReferralUnlinkRequest}
+// @Success       200 {object} structs.ResponseBody
 // @Failure       400 {object} structs.ErrorResponse
 // @Failure       401 {object} structs.ErrorResponse
 // @Failure       500 {object} structs.ErrorResponse
 // @Security      InternalKey
-// @Router        /internal/referral-unlink-requests [post]
-func (co EventsController) CreateUnlinkRequest(c *gin.Context) {
+// @Router        /internal/referral-unlink [post]
+func (co EventsController) UserUnlinkReferral(c *gin.Context) {
 	defer func() { c.JSON(co.GetBody(c)) }()
 
 	var params structs.ReferralUnlinkRequestCreateParams
@@ -184,11 +186,11 @@ func (co EventsController) CreateUnlinkRequest(c *gin.Context) {
 		return
 	}
 
-	result, err := co.ReferralService.Commands.CreateUnlinkRequest.Handle(params)
+	result, err := co.ReferralService.Commands.UnlinkReferral.HandleUser(params.UserID)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrNoActiveReferral),
-			errors.Is(err, domain.ErrPendingUnlinkRequest):
+			errors.Is(err, domain.ErrUnlinkCooldown):
 			co.SetError(c, http.StatusBadRequest, err.Error())
 		default:
 			co.SetError(c, http.StatusInternalServerError, err.Error())
