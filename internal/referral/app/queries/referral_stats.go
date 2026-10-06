@@ -12,9 +12,16 @@ type ReferralStatsHandler struct {
 }
 
 func (h *ReferralStatsHandler) Handle(partnerID string) (dto.ReferralStats, error) {
+	latestReferralIDs := h.DB.
+		Table("referrals").
+		Select("DISTINCT ON (referred_user_id) id").
+		Where("partner_id = ? AND deleted_at IS NULL", partnerID).
+		Order("referred_user_id, created_at DESC, id DESC")
+
 	base := func() *gorm.DB {
 		return h.DB.Model(&database.Referral{}).
-			Where("partner_id = ?", partnerID)
+			Where("partner_id = ?", partnerID).
+			Where("id IN (?)", latestReferralIDs)
 	}
 
 	var stats dto.ReferralStats

@@ -50,14 +50,21 @@ func (r *GormReferralRepo) List(partnerID string, params structs.ReferralListPar
 	pInput := common.PreparePaginationInput(params.PaginationInput)
 	params.PaginationInput = pInput
 
+	latestReferralIDs := r.DB.
+		Table("referrals").
+		Select("DISTINCT ON (referred_user_id) id").
+		Where("partner_id = ? AND deleted_at IS NULL", partnerID).
+		Order("referred_user_id, created_at DESC, id DESC")
+
 	orm := r.DB.Model(&database.Referral{}).
-		Where("partner_id = ?", partnerID)
-	orm = common.Equal(orm, "status", params.Status)
+		Where("partner_id = ?", partnerID).
+		Where("id IN (?)", latestReferralIDs)
 
 	if params.Query != "" {
 		q := "%" + params.Query + "%"
 		orm = orm.Where("referred_user_id ILIKE ?", q)
 	}
+	orm = common.Equal(orm, "status", params.Status)
 
 	total := common.Total(orm.Scopes(common.SortDateFilter(&params.PaginationInput)))
 
