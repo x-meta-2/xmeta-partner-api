@@ -46,13 +46,21 @@ type CurrentReferral struct {
 	Partner      CurrentReferralPartner `json:"partner"`
 	CanUnlink    bool                   `json:"canUnlink"`
 	NextUnlinkAt *time.Time             `json:"nextUnlinkAt,omitempty"`
+	NextLinkAt   *time.Time             `json:"nextLinkAt,omitempty"`
 }
 
 type ReferralUnlinkResult struct {
 	ReferralID   string                  `json:"referralId"`
 	Status       database.ReferralStatus `json:"status"`
 	UnlinkedAt   time.Time               `json:"unlinkedAt"`
-	NextUnlinkAt time.Time               `json:"nextUnlinkAt"`
+	NextLinkAt   time.Time               `json:"nextLinkAt"`
+	NextUnlinkAt time.Time               `json:"nextUnlinkAt"` // deprecated: use nextLinkAt
+}
+
+type LinkCooldownPayload struct {
+	Code       string    `json:"code"`
+	Message    string    `json:"message"`
+	NextLinkAt time.Time `json:"nextLinkAt"`
 }
 
 type AdminReferralDetail struct {

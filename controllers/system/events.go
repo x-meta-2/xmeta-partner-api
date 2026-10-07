@@ -6,6 +6,7 @@ import (
 
 	"xmeta-partner/controllers/common"
 	internalReferral "xmeta-partner/internal/referral"
+	referralDTO "xmeta-partner/internal/referral/app/dto"
 	"xmeta-partner/internal/referral/domain"
 	"xmeta-partner/middlewares"
 	"xmeta-partner/structs"
@@ -87,9 +88,16 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 
 	err := co.ReferralService.Commands.LinkReferral.Handle(params.UserID, params.ReferralCode)
 	if err != nil {
+		var cooldownErr domain.LinkCooldownError
 		switch {
 		case errors.Is(err, domain.ErrLinkNotFound):
 			co.SetError(c, http.StatusNotFound, err.Error())
+		case errors.As(err, &cooldownErr):
+			co.SetErrorBody(c, http.StatusBadRequest, err.Error(), referralDTO.LinkCooldownPayload{
+				Code:       "referral_link_cooldown",
+				Message:    err.Error(),
+				NextLinkAt: cooldownErr.NextLinkAt,
+			})
 		case errors.Is(err, domain.ErrPartnerNotActive),
 			errors.Is(err, domain.ErrSelfReferral),
 			errors.Is(err, domain.ErrCircularReferral),

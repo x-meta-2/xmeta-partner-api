@@ -62,12 +62,12 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 		}
 
 		now := time.Now()
-		canLink, err := h.canLinkAfterPreviousUnlink(tx, userID, now)
+		nextLinkAt, err := h.nextLinkAllowedAt(tx, userID)
 		if err != nil {
 			return err
 		}
-		if !canLink {
-			return domain.ErrLinkCooldown
+		if nextLinkAt != nil && nextLinkAt.After(now) {
+			return domain.LinkCooldownError{NextLinkAt: *nextLinkAt}
 		}
 
 		referral := database.Referral{
@@ -100,22 +100,23 @@ func (h *LinkReferralHandler) Handle(userID, code string) error {
 	})
 }
 
-func (h *LinkReferralHandler) canLinkAfterPreviousUnlink(tx *gorm.DB, userID string, now time.Time) (bool, error) {
+func (h *LinkReferralHandler) nextLinkAllowedAt(tx *gorm.DB, userID string) (*time.Time, error) {
 	var previous database.Referral
 	err := tx.
 		Where("referred_user_id = ? AND status = ? AND ended_at IS NOT NULL", userID, database.ReferralStatusUnlinked).
 		Order("ended_at desc").
 		First(&previous).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return true, nil
+		return nil, nil
 	}
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if previous.EndedAt == nil {
-		return true, nil
+		return nil, nil
 	}
-	return !previous.EndedAt.Add(userUnlinkCooldown).After(now), nil
+	nextLinkAt := previous.EndedAt.Add(userUnlinkCooldown)
+	return &nextLinkAt, nil
 }
 
 func (h *LinkReferralHandler) wouldCreateCycle(userID, targetPartnerUserID string) (bool, error) {

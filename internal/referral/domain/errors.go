@@ -1,6 +1,9 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 var (
 	ErrLinkNotFound          = errors.New("referral link not found")
@@ -18,3 +21,15 @@ var (
 	ErrUnlinkRequestNotFound = errors.New("referral unlink request not found")
 	ErrUnlinkRequestReviewed = errors.New("referral unlink request is already reviewed")
 )
+
+type LinkCooldownError struct {
+	NextLinkAt time.Time
+}
+
+func (e LinkCooldownError) Error() string {
+	return ErrLinkCooldown.Error()
+}
+
+func (e LinkCooldownError) Is(target error) bool {
+	return target == ErrLinkCooldown
+}

@@ -31,6 +31,11 @@ func (co Controller) SetError(c *gin.Context, code int, message string) {
 	c.Set("res_body", structs.ResponseBody{Message: message, Body: nil})
 }
 
+func (co Controller) SetErrorBody(c *gin.Context, code int, message string, body interface{}) {
+	c.Set("res_status", code)
+	c.Set("res_body", structs.ResponseBody{Message: message, Body: body})
+}
+
 // GetBody returns status and body from context
 func (co Controller) GetBody(c *gin.Context) (int, interface{}) {
 	status, exists := c.Get("res_status")

@@ -49,6 +49,7 @@ func (h *UnlinkReferralHandler) HandleUser(userID string) (dto.ReferralUnlinkRes
 			ReferralID:   referral.ID,
 			Status:       referral.Status,
 			UnlinkedAt:   now,
+			NextLinkAt:   now.Add(userUnlinkCooldown),
 			NextUnlinkAt: now.Add(userUnlinkCooldown),
 		}
 		return nil
