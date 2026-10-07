@@ -17,7 +17,7 @@ type (
 		Base
 		PartnerID             string                 `gorm:"column:partner_id;not null;index" json:"partnerId"`
 		Partner               *Partner               `gorm:"foreignKey:PartnerID" json:"partner"`
-		Amount                float64                `gorm:"column:amount;type:decimal(20,8);not null" json:"amount"` // net payable amount after tax; kept as amount for backward compatibility
+		Amount                float64                `gorm:"column:amount;type:decimal(20,8);not null" json:"amount"` // payable amount; commission rows are already net of tax
 		GrossAmount           float64                `gorm:"column:gross_amount;type:decimal(20,8);not null;default:0" json:"grossAmount"`
 		TaxRate               float64                `gorm:"column:tax_rate;type:decimal(5,4);not null;default:0" json:"taxRate"`
 		TaxAmount             float64                `gorm:"column:tax_amount;type:decimal(20,8);not null;default:0" json:"taxAmount"`

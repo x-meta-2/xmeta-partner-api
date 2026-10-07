@@ -14,8 +14,6 @@ type RequestPayoutHandler struct {
 	DB *gorm.DB
 }
 
-const payoutTaxRate = 0.10
-
 func (h *RequestPayoutHandler) Handle(partnerID string) (*database.Payout, error) {
 	var payout database.Payout
 
@@ -72,15 +70,13 @@ func (h *RequestPayoutHandler) Handle(partnerID string) (*database.Payout, error
 			return err
 		}
 
-		grossAmount := truncatePayoutAmount(pending.Amount)
-		taxAmount := truncatePayoutAmount(grossAmount * payoutTaxRate)
-		netAmount := truncatePayoutAmount(grossAmount - taxAmount)
+		payoutAmount := truncatePayoutAmount(pending.Amount)
 		payout = database.Payout{
 			PartnerID:       partnerID,
-			Amount:          netAmount,
-			GrossAmount:     grossAmount,
-			TaxRate:         payoutTaxRate,
-			TaxAmount:       taxAmount,
+			Amount:          payoutAmount,
+			GrossAmount:     payoutAmount,
+			TaxRate:         0,
+			TaxAmount:       0,
 			Currency:        "USDT",
 			CommissionCount: int(pending.Count),
 			PeriodStart:     pending.PeriodStart,

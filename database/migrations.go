@@ -302,23 +302,6 @@ func addPayoutTaxAndTransferColumns(db *gorm.DB) {
 		return
 	}
 
-	// Existing active payout requests were created before tax snapshots existed.
-	// Apply the 10% tax once before an admin can approve/transfer them.
-	if err := db.Exec(`
-		UPDATE payouts
-		SET
-			tax_rate = 0.10,
-			tax_amount = FLOOR((gross_amount * 0.10) * 10000) / 10000,
-			amount = FLOOR((gross_amount - (FLOOR((gross_amount * 0.10) * 10000) / 10000)) * 10000) / 10000
-		WHERE status IN ('pending', 'processing')
-		  AND tax_rate = 0
-		  AND tax_amount = 0
-		  AND gross_amount > 0
-	`).Error; err != nil {
-		log.Printf("  Error applying tax to active legacy payouts: %v", err)
-		return
-	}
-
 	dropColumn(db, "payouts", "net_amount")
 
 	if err := db.Exec(`

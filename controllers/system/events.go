@@ -93,7 +93,8 @@ func (co EventsController) LinkReferral(c *gin.Context) {
 		case errors.Is(err, domain.ErrPartnerNotActive),
 			errors.Is(err, domain.ErrSelfReferral),
 			errors.Is(err, domain.ErrCircularReferral),
-			errors.Is(err, domain.ErrActiveReferralExists):
+			errors.Is(err, domain.ErrActiveReferralExists),
+			errors.Is(err, domain.ErrLinkCooldown):
 			co.SetError(c, http.StatusBadRequest, err.Error())
 		default:
 			co.SetError(c, http.StatusInternalServerError, err.Error())
@@ -189,8 +190,7 @@ func (co EventsController) UserUnlinkReferral(c *gin.Context) {
 	result, err := co.ReferralService.Commands.UnlinkReferral.HandleUser(params.UserID)
 	if err != nil {
 		switch {
-		case errors.Is(err, domain.ErrNoActiveReferral),
-			errors.Is(err, domain.ErrUnlinkCooldown):
+		case errors.Is(err, domain.ErrNoActiveReferral):
 			co.SetError(c, http.StatusBadRequest, err.Error())
 		default:
 			co.SetError(c, http.StatusInternalServerError, err.Error())

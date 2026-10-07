@@ -19,6 +19,7 @@ import (
 const (
 	defaultFuturesClosedPositionSyncLimit = 1000
 	maxFuturesClosedPositionSyncLimit     = 10000
+	partnerCommissionTaxRate              = 0.10
 	futuresPositionIdentitySQL            = "COALESCE(NULLIF(futures_closed_positions.sk, ''), NULLIF(futures_closed_positions.id, ''), NULLIF(futures_closed_positions.order_id, ''), NULLIF(futures_closed_positions.position_id, ''))"
 )
 
@@ -161,7 +162,7 @@ func (h *SyncFuturesClosedPositionsHandler) processPosition(position database.Fu
 	}
 
 	commissionRate := partner.Tier.CommissionRate
-	rebateAmount := truncate4(tradeFee * commissionRate)
+	rebateAmount := calculateNetRebateAmount(tradeFee, commissionRate)
 	commission := database.Commission{
 		PartnerID:        partner.ID,
 		ReferredUserID:   position.UserID,
@@ -257,4 +258,9 @@ func futuresMarketID(position database.FuturesClosedPosition) string {
 
 func truncate4(value float64) float64 {
 	return math.Floor(value*1e4) / 1e4
+}
+
+func calculateNetRebateAmount(tradeFee float64, commissionRate float64) float64 {
+	grossRebate := truncate4(tradeFee * commissionRate)
+	return truncate4(grossRebate * (1 - partnerCommissionTaxRate))
 }
