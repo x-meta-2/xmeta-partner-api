@@ -30,6 +30,7 @@ func RunMigrations(db *gorm.DB) {
 	// addPayoutConcurrencyGuard(db)      // 2026-05-07 — partial unique index: one pending/processing payout per partner
 	// addReferralUnlinkRequestGuard(db)  // 2026-09-21 — one pending unlink request per referred user
 	// addPayoutTaxAndTransferColumns(db) // 2026-10-05 — tax snapshot + transfer service metadata
+	addPayoutTransferIDUniquenessGuard(db) // 2026-10-20 — unique non-empty payout transfer identifiers
 
 	log.Println("Custom migrations completed!")
 }
@@ -321,6 +322,44 @@ func addPayoutTaxAndTransferColumns(db *gorm.DB) {
 	}
 
 	log.Println("✓ payout tax snapshot and transfer metadata columns ready")
+}
+
+func addPayoutTransferIDUniquenessGuard(db *gorm.DB) {
+	log.Println("→ addPayoutTransferIDUniquenessGuard")
+
+	// These columns were previously backed by non-unique indexes. Replace
+	// those indexes with partial unique indexes so legacy empty values remain
+	// valid while a real transfer identifier can belong to only one payout.
+	for _, indexName := range []string{
+		"idx_payouts_transaction_id",
+		"idx_payouts_transfer_request_id",
+		"idx_payouts_transfer_transaction_id",
+	} {
+		dropIndex(db, indexName)
+	}
+
+	indexes := []struct {
+		name   string
+		column string
+	}{
+		{name: "idx_payouts_transaction_id_unique", column: "transaction_id"},
+		{name: "idx_payouts_transfer_request_id_unique", column: "transfer_request_id"},
+		{name: "idx_payouts_transfer_transaction_id_unique", column: "transfer_transaction_id"},
+	}
+
+	for _, index := range indexes {
+		query := fmt.Sprintf(`
+			CREATE UNIQUE INDEX IF NOT EXISTS %s
+			ON payouts (%s)
+			WHERE %s IS NOT NULL AND %s <> ''
+		`, index.name, index.column, index.column, index.column)
+		if err := db.Exec(query).Error; err != nil {
+			log.Printf("  Error creating unique payout %s index: %v", index.column, err)
+			continue
+		}
+	}
+
+	log.Println("✓ payout transfer identifier uniqueness guards ready")
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────

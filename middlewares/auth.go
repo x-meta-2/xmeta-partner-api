@@ -87,7 +87,16 @@ func AdminAuth(db *gorm.DB) gin.HandlerFunc {
 			err = query.Where("email = ?", userEmail).First(&adminUser).Error
 		}
 		if err != nil {
-			adminUser = database.AdminUser{Base: database.Base{ID: userID}, Email: userEmail}
+			c.AbortWithStatusJSON(http.StatusUnauthorized, fail)
+			return
+		}
+
+		// Cognito lifecycle values may be stored in status (for example
+		// CONFIRMED or FORCE_CHANGE_PASSWORD). IsEnabled is the access flag;
+		// only an explicit inactive status blocks an existing admin.
+		if !adminUser.IsEnabled || strings.EqualFold(strings.TrimSpace(adminUser.Status), "inactive") {
+			c.AbortWithStatusJSON(http.StatusForbidden, structs.ResponseBody{Message: "Admin account is disabled"})
+			return
 		}
 
 		c.Set(AdminAuthKey, &adminUser)
